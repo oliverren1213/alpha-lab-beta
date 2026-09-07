@@ -1,0 +1,6 @@
+# Cloudflare local-development variables. Production identity is managed by Sites.
+CRON_SECRET=generate_at_least_32_random_characters
+ALLOW_DEV_REFRESH=true
+FINNHUB_API_KEY=
+ALPHA_VANTAGE_API_KEY=
+ALPHA_VANTAGE_THROTTLE_MS=13000
