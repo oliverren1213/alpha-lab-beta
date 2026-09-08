@@ -106,7 +106,11 @@ const emptyShock: ScenarioShock = {
   specific: {},
 };
 
-export function AlphaLab({ initialData, displayName }: { initialData: LabData; displayName: string }) {
+export function AlphaLab({
+  initialData,
+  displayName,
+  isGuest = false,
+}: { initialData: LabData; displayName: string; isGuest?: boolean }) {
   const [data, setData] = useState(initialData);
   const [view, setView] = useState<View>("portfolio");
   const [currency, setCurrency] = useState<Currency>("USD");
@@ -247,12 +251,17 @@ export function AlphaLab({ initialData, displayName }: { initialData: LabData; d
           </nav>
           <div className="topbar-actions">
             <span className="user-badge" title={displayName}>{displayName}</span>
-            <button className="text-button" onClick={logout} type="button">退出</button>
+            {!isGuest ? <button className="text-button" onClick={logout} type="button">退出</button> : null}
           </div>
         </div>
       </header>
 
       <main className="workspace">
+        {isGuest ? (
+          <div className="notice info" role="status">
+            这是独立的访客演示空间；预置内容均为明确标注的示例数据，不是任何人的真实持仓。
+          </div>
+        ) : null}
         <header className="workspace-header">
           <h1>{viewTitle(view)}</h1>
           <div className="header-actions">

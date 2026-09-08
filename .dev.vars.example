@@ -1,4 +1,5 @@
 # Cloudflare local-development variables. Production identity is managed by Sites.
+GUEST_SESSION_SECRET=generate_at_least_32_random_characters
 CRON_SECRET=generate_at_least_32_random_characters
 ALLOW_DEV_REFRESH=true
 FINNHUB_API_KEY=

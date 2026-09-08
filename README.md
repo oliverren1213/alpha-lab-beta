@@ -7,9 +7,9 @@
 
 ![Alpha Lab Beta](public/og.png)
 
-An auditable, private-by-default investment ledger and portfolio analysis workspace. Alpha Lab tracks what changed, how performance was calculated, and why an investment decision was made—without pretending to be an AI stock picker.
+An auditable investment ledger and portfolio analysis workspace. Alpha Lab tracks what changed, how performance was calculated, and why an investment decision was made—without pretending to be an AI stock picker.
 
-> Public Beta: the application is publicly reachable, but every visitor signs in with ChatGPT and can access only their own records.
+> Public Beta: anonymous visitors receive an isolated browser workspace with clearly labeled demo data. Signed-in users remain isolated by their Sites user ID.
 
 ## Why this exists
 
@@ -30,7 +30,7 @@ Most retail portfolio dashboards show a number without showing its provenance. A
 
 ## Privacy and data integrity
 
-- ChatGPT identity is verified server-side from Sites-provided headers.
+- Anonymous workspaces use signed, HttpOnly guest sessions; ChatGPT identity is used when available.
 - Accounts, transactions, imports, portfolio snapshots, fund NAVs, and theses are scoped by a stable per-Site user ID.
 - Public market prices and ECB reference FX rates may be shared; private portfolio records are never shared.
 - The repository contains no credentials, personal holdings, or production database exports.

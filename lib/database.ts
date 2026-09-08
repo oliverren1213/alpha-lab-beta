@@ -24,6 +24,7 @@ type RuntimeEnv = {
   ALPHA_VANTAGE_API_KEY?: string;
   ALPHA_VANTAGE_THROTTLE_MS?: string;
   FINNHUB_API_KEY?: string;
+  GUEST_SESSION_SECRET?: string;
 };
 
 export function getRuntimeEnv() {
@@ -321,6 +322,60 @@ export async function loadLabData(ownerId: string): Promise<LabData> {
     demoMode: transactionsRaw.length > 0 && transactionsRaw.every((row) => Boolean(row.is_demo)),
     generatedAt: new Date().toISOString(),
   };
+}
+
+export async function ensureGuestDemoData(ownerId: string) {
+  if (!ownerId.startsWith("guest_")) return;
+  await ensureDatabase();
+  const database = getDatabase();
+  const existing = await database.prepare("SELECT id FROM accounts WHERE owner_id=? LIMIT 1")
+    .bind(ownerId).first<{ id: string }>();
+  if (existing) return;
+
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const prior = new Date(now.getTime() - 86_400_000).toISOString().slice(0, 10);
+  const bought = new Date(now.getTime() - 30 * 86_400_000).toISOString();
+  const createdAt = now.toISOString();
+  const accountId = id("account");
+  const equityId = "asset-demo-equity";
+  const techId = "asset-demo-tech";
+  await database.batch([
+    database.prepare(
+      "INSERT OR IGNORE INTO assets (id,symbol,name,asset_type,currency,sector,provider_symbol,is_leveraged,leverage_target,is_demo,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+    ).bind(equityId, "DEMO-EQ", "全球股票组合（演示）", "ETF", "USD", "Diversified", null, 0, null, 1, createdAt),
+    database.prepare(
+      "INSERT OR IGNORE INTO assets (id,symbol,name,asset_type,currency,sector,provider_symbol,is_leveraged,leverage_target,is_demo,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+    ).bind(techId, "DEMO-TECH", "科技成长组合（演示）", "STOCK", "USD", "Technology", null, 0, null, 1, createdAt),
+    database.prepare(
+      "INSERT INTO accounts (id,owner_id,name,institution,base_currency,masked_account,is_demo,created_at) VALUES (?,?,?,?,?,?,?,?)",
+    ).bind(accountId, ownerId, "访客演示账户", "Alpha Lab Sandbox", "USD", "DEMO", 1, createdAt),
+    database.prepare(
+      `INSERT INTO transactions
+       (id,owner_id,account_id,asset_id,type,traded_at,settlement_date,quantity,unit_price,currency,fee,tax,fx_to_base,total_amount,source,import_batch_id,note,reconciled,is_demo,created_at,updated_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    ).bind(id("tx"), ownerId, accountId, null, "CASH_IN", bought, null, 0, null, "USD", 0, 0, 1, 10_000, "Demo fixture", null, "明确标注的访客演示数据", 1, 1, createdAt, createdAt),
+    database.prepare(
+      `INSERT INTO transactions
+       (id,owner_id,account_id,asset_id,type,traded_at,settlement_date,quantity,unit_price,currency,fee,tax,fx_to_base,total_amount,source,import_batch_id,note,reconciled,is_demo,created_at,updated_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    ).bind(id("tx"), ownerId, accountId, equityId, "BUY", bought, null, 12, 220, "USD", 2, 0, 1, null, "Demo fixture", null, "明确标注的访客演示数据", 1, 1, createdAt, createdAt),
+    database.prepare(
+      `INSERT INTO transactions
+       (id,owner_id,account_id,asset_id,type,traded_at,settlement_date,quantity,unit_price,currency,fee,tax,fx_to_base,total_amount,source,import_batch_id,note,reconciled,is_demo,created_at,updated_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    ).bind(id("tx"), ownerId, accountId, techId, "BUY", bought, null, 8, 310, "USD", 2, 0, 1, null, "Demo fixture", null, "明确标注的访客演示数据", 1, 1, createdAt, createdAt),
+    ...[
+      [equityId, prior, "MORNING", 228],
+      [equityId, today, "AFTERNOON", 232],
+      [techId, prior, "MORNING", 302],
+      [techId, today, "AFTERNOON", 298],
+    ].map(([assetId, date, session, price]) => database.prepare(
+      `INSERT INTO price_snapshots
+       (id,owner_id,asset_id,price_date,fetched_at,provider,quoted_at,session,data_quality,is_delayed,price,nav,currency,status,is_demo)
+       VALUES (?,?,?,?,?,?,NULL,?,'DEMO',0,?,NULL,'USD','FRESH',1)`,
+    ).bind(id("price"), ownerId, assetId, date, createdAt, "Clearly labeled demo fixture", session, price)),
+  ]);
 }
 
 export async function all(database: D1Database, sql: string, values: unknown[] = []) {

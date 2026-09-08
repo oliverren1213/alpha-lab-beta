@@ -17,6 +17,7 @@ const { scheduledRomeMode, olderThan90Minutes } =
   await vite.ssrLoadModule("/lib/schedule.ts");
 const { parseCsv, stringifyCsv } = await vite.ssrLoadModule("/lib/csv.ts");
 const { transactionFingerprint } = await vite.ssrLoadModule("/lib/transaction-fingerprint.ts");
+const { createGuestToken, verifyGuestToken } = await vite.ssrLoadModule("/lib/guest-session.ts");
 const { normalizeTradeDate, transactionAmountPreview } =
   await vite.ssrLoadModule("/lib/transaction-form.ts");
 const { FinnhubQuoteProvider, previousTradingDate } =
@@ -324,6 +325,12 @@ test("trade fingerprint ignores time, notes and numeric formatting", () => {
   const differentTrade = { ...duplicate, type: "SELL" };
   assert.equal(transactionFingerprint(first), transactionFingerprint(duplicate));
   assert.notEqual(transactionFingerprint(first), transactionFingerprint(differentTrade));
+});
+
+test("guest sessions are signed and reject tampering", async () => {
+  const session = await createGuestToken("test-secret-with-enough-entropy", "11111111-1111-4111-8111-111111111111");
+  assert.equal(await verifyGuestToken("test-secret-with-enough-entropy", session.token), session.ownerId);
+  assert.equal(await verifyGuestToken("test-secret-with-enough-entropy", `${session.token}x`), null);
 });
 
 test("transaction form keeps broker dates stable and previews cash impact", () => {
