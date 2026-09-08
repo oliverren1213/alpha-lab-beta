@@ -1,4 +1,4 @@
-name: Oliver Alpha Lab daily refresh
+name: Optional daily refresh fallback
 
 permissions:
   contents: read
@@ -13,7 +13,7 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     concurrency:
-      group: oliver-alpha-lab-refresh
+      group: alpha-lab-beta-refresh
       cancel-in-progress: false
     steps:
       - name: Call the protected daily refresh endpoint
@@ -21,8 +21,10 @@ jobs:
           ALPHA_LAB_URL: ${{ secrets.ALPHA_LAB_URL }}
           CRON_SECRET: ${{ secrets.ALPHA_LAB_CRON_SECRET }}
         run: |
-          test -n "$ALPHA_LAB_URL"
-          test -n "$CRON_SECRET"
+          if [ -z "$ALPHA_LAB_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "Optional fallback is not configured; skipping."
+            exit 0
+          fi
           curl --fail-with-body --retry 2 --max-time 300 \
             -X POST \
             -H "Authorization: Bearer $CRON_SECRET" \
