@@ -1,6 +1,7 @@
 # Alpha Lab Beta
 
 [![Beta](https://img.shields.io/badge/status-public_beta-0A84FF)](https://alpha-lab-beta.kv2dz8h2bw.chatgpt.site)
+[![CI](https://github.com/oliverren1213/alpha-lab-beta/actions/workflows/ci.yml/badge.svg)](https://github.com/oliverren1213/alpha-lab-beta/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/badge/deterministic_tests-21_passed-30D158)](#validation)
 
 [Open the live Beta](https://alpha-lab-beta.kv2dz8h2bw.chatgpt.site)
