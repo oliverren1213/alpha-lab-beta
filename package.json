@@ -13,7 +13,6 @@
     "test": "tsc --noEmit && node --test tests/*.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
-    "auth:hash": "node scripts/hash-password.mjs",
     "refresh:local": "node scripts/refresh-local.mjs"
   },
   "dependencies": {
