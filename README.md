@@ -1,9 +1,11 @@
 # Alpha Lab Beta
 
-[![CI](https://github.com/oliverren1213/alpha-lab-beta/actions/workflows/ci.yml/badge.svg)](https://github.com/oliverren1213/alpha-lab-beta/actions/workflows/ci.yml)
-[![Beta](https://img.shields.io/badge/status-public_beta-0A84FF)](https://alpha-lab-beta.cocoa-venus-5977.chatgpt.site)
+[![Beta](https://img.shields.io/badge/status-public_beta-0A84FF)](https://alpha-lab-beta.kv2dz8h2bw.chatgpt.site)
+[![Tests](https://img.shields.io/badge/deterministic_tests-21_passed-30D158)](#validation)
 
-[Open the live Beta](https://alpha-lab-beta.cocoa-venus-5977.chatgpt.site)
+[Open the live Beta](https://alpha-lab-beta.kv2dz8h2bw.chatgpt.site)
+
+![Alpha Lab Beta](public/og.png)
 
 An auditable, private-by-default investment ledger and portfolio analysis workspace. Alpha Lab tracks what changed, how performance was calculated, and why an investment decision was made—without pretending to be an AI stock picker.
 
