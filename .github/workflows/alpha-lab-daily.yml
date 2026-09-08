@@ -1,0 +1,31 @@
+name: Optional daily refresh fallback
+
+permissions:
+  contents: read
+
+on:
+  schedule:
+    # Europe/Rome is UTC+1 or UTC+2. The endpoint accepts only the matching local slot.
+    - cron: "15 7,8,16,17 * * *"
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: alpha-lab-beta-refresh
+      cancel-in-progress: false
+    steps:
+      - name: Call the protected daily refresh endpoint
+        env:
+          ALPHA_LAB_URL: ${{ secrets.ALPHA_LAB_URL }}
+          CRON_SECRET: ${{ secrets.ALPHA_LAB_CRON_SECRET }}
+        run: |
+          if [ -z "$ALPHA_LAB_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "Optional fallback is not configured; skipping."
+            exit 0
+          fi
+          curl --fail-with-body --retry 2 --max-time 300 \
+            -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "${ALPHA_LAB_URL%/}/api/cron/daily"
