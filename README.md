@@ -1,7 +1,7 @@
 # Alpha Lab Beta
 
 [![Beta](https://img.shields.io/badge/status-public_beta-0A84FF)](https://alpha-lab-beta.kv2dz8h2bw.chatgpt.site)
-[![Tests](https://img.shields.io/badge/deterministic_tests-21_passed-30D158)](#validation)
+[![Tests](https://img.shields.io/badge/deterministic_tests-23_passed-30D158)](#validation)
 
 [Open the live Beta](https://alpha-lab-beta.kv2dz8h2bw.chatgpt.site)
 
@@ -27,6 +27,7 @@ Most retail portfolio dashboards show a number without showing its provenance. A
 - Scenario analysis with an explicit warning for leveraged ETF path dependency
 - Scheduled Rome-time refresh windows and a 90-minute stale-on-open refresh guard
 - Responsive light/dark Apple-inspired interface
+- English/Chinese interface, guided three-step trade entry, resettable guest demo, and project case-study view
 
 ## Privacy and data integrity
 
@@ -50,7 +51,7 @@ This distinction matters: code support for a provider is not a claim that produc
 
 ```text
 Browser
-  -> Sign in with ChatGPT
+  -> Signed guest session or optional ChatGPT identity
   -> Vinext / React application
   -> Cloudflare Worker API
   -> owner-scoped Cloudflare D1 records
@@ -73,7 +74,7 @@ Core implementation areas:
 
 ## Validation
 
-The Beta currently includes 21 deterministic tests covering:
+The Beta currently includes 23 deterministic tests covering:
 
 - weighted average and FIFO;
 - partial sale, full exit and re-entry;

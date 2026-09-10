@@ -10,7 +10,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: "Alpha Lab Beta",
-    description: "A private-by-default investment ledger, portfolio analyzer and decision journal.",
+    description: "An auditable investment ledger, portfolio analyzer and decision journal.",
     applicationName: "Alpha Lab Beta",
     robots: { index: true, follow: true },
     openGraph: {
@@ -38,7 +38,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="zh-CN" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body>{children}</body>
     </html>
   );

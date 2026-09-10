@@ -330,7 +330,10 @@ export async function ensureGuestDemoData(ownerId: string) {
   const database = getDatabase();
   const existing = await database.prepare("SELECT id FROM accounts WHERE owner_id=? LIMIT 1")
     .bind(ownerId).first<{ id: string }>();
-  if (existing) return;
+  if (existing) {
+    await ensureGuestDemoHistory(database, ownerId);
+    return;
+  }
 
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
@@ -376,6 +379,43 @@ export async function ensureGuestDemoData(ownerId: string) {
        VALUES (?,?,?,?,?,?,NULL,?,'DEMO',0,?,NULL,'USD','FRESH',1)`,
     ).bind(id("price"), ownerId, assetId, date, createdAt, "Clearly labeled demo fixture", session, price)),
   ]);
+  await ensureGuestDemoHistory(database, ownerId);
+}
+
+async function ensureGuestDemoHistory(database: D1Database, ownerId: string) {
+  const existing = await database.prepare("SELECT id FROM portfolio_snapshots WHERE owner_id=? LIMIT 1")
+    .bind(ownerId).first<{ id: string }>();
+  if (existing) return;
+  const now = new Date();
+  const values = [9_970, 10_015, 9_955, 10_040, 10_005, 10_044];
+  await database.batch(values.map((totalValue, index) => {
+    const date = new Date(now.getTime() - (values.length - 1 - index) * 86_400_000).toISOString().slice(0, 10);
+    return database.prepare(
+      `INSERT OR IGNORE INTO portfolio_snapshots
+       (id,owner_id,snapshot_date,base_currency,total_value,net_contributions,realized_pnl,
+        unrealized_pnl,dividend_income,fee_and_tax,fx_pnl,status,session,created_at,is_demo)
+       VALUES (?,?,?,?,?,?,0,?,0,4,0,'DEMO','AFTERNOON',?,1)`,
+    ).bind(id("portfolio"), ownerId, date, "USD", totalValue, 10_000, totalValue - 10_000, now.toISOString());
+  }));
+}
+
+export async function resetGuestDemoData(ownerId: string) {
+  if (!ownerId.startsWith("guest_")) throw new Error("Only guest demo workspaces can be reset");
+  await ensureDatabase();
+  const database = getDatabase();
+  await database.batch([
+    database.prepare("DELETE FROM decision_reviews WHERE thesis_id IN (SELECT id FROM theses WHERE owner_id=?)").bind(ownerId),
+    database.prepare("DELETE FROM thesis_revisions WHERE thesis_id IN (SELECT id FROM theses WHERE owner_id=?)").bind(ownerId),
+    database.prepare("DELETE FROM theses WHERE owner_id=?").bind(ownerId),
+    database.prepare("DELETE FROM positions WHERE account_id IN (SELECT id FROM accounts WHERE owner_id=?)").bind(ownerId),
+    database.prepare("DELETE FROM cash_flows WHERE account_id IN (SELECT id FROM accounts WHERE owner_id=?)").bind(ownerId),
+    database.prepare("DELETE FROM transactions WHERE owner_id=?").bind(ownerId),
+    database.prepare("DELETE FROM price_snapshots WHERE owner_id=?").bind(ownerId),
+    database.prepare("DELETE FROM portfolio_snapshots WHERE owner_id=?").bind(ownerId),
+    database.prepare("DELETE FROM import_batches WHERE owner_id=?").bind(ownerId),
+    database.prepare("DELETE FROM accounts WHERE owner_id=?").bind(ownerId),
+  ]);
+  await ensureGuestDemoData(ownerId);
 }
 
 export async function all(database: D1Database, sql: string, values: unknown[] = []) {

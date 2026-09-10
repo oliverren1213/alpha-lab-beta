@@ -20,7 +20,7 @@ Alpha Lab treats the ledger and evidence trail as the source of truth. It keeps 
 - **Real records only:** no production mock holdings or random quotes.
 - **Auditability over false precision:** price dates, timestamps, delay flags, and NAV dates remain visible.
 - **User isolation by construction:** every private record is owner-scoped at the API and query layers.
-- **Low-friction onboarding:** a validated CSV can create accounts, assets, and transactions in one import.
+- **Low-friction onboarding:** an isolated guest demo, guided trade entry, and validated CSV import let people understand the product before committing their own records.
 - **Decision quality over activity:** versioned theses and scheduled reviews reward learning rather than frequent trading.
 
 ## Engineering challenges solved
@@ -39,11 +39,11 @@ Morning and afternoon snapshots have different comparison rules. Fund NAVs keep 
 
 ### Public product, private records
 
-The Beta is publicly discoverable but requires ChatGPT sign-in for the working surface. Server APIs derive the owner ID from trusted platform headers; clients cannot choose another owner's ID. Shared market observations are separated from owner-specific manual NAVs and portfolio snapshots.
+The Beta is publicly usable without a login. Anonymous visitors receive signed, isolated guest sessions; signed-in visitors use trusted platform identity. Server APIs derive the owner ID rather than accepting one from the client. Shared market observations remain separate from owner-specific manual NAVs and portfolio snapshots.
 
 ## Evidence
 
-- 21 deterministic calculation and data-behavior tests
+- 23 deterministic calculation and data-behavior tests
 - TypeScript strict-mode typecheck
 - Lint and production Worker build
 - Persistent D1 migrations with per-owner uniqueness constraints
@@ -54,7 +54,7 @@ The Beta is publicly discoverable but requires ChatGPT sign-in for the working s
 
 **Project — Alpha Lab Beta, Product Designer & Full-Stack Developer**
 
-Built a privacy-first, multi-user investment analytics platform on React, Cloudflare Workers, and D1; implemented auditable FIFO/weighted-average cost basis, multi-currency P&L attribution, timestamped market-data quality controls, CSV/backup workflows, and owner-scoped authentication, supported by 21 deterministic tests.
+Built a privacy-first, multi-user investment analytics platform on React, Cloudflare Workers, and D1; implemented auditable FIFO/weighted-average cost basis, multi-currency P&L attribution, timestamped market-data quality controls, bilingual guest onboarding, CSV/backup workflows, and owner-scoped persistence, supported by 23 deterministic tests.
 
 ## Honest limitations
 
@@ -62,4 +62,3 @@ Built a privacy-first, multi-user investment analytics platform on React, Cloudf
 - Fund NAV is confirmed manually rather than scraped.
 - Intraday attribution is an estimate and does not yet model every trade-timing interaction.
 - It is not a broker, tax engine, or personalized financial adviser.
-

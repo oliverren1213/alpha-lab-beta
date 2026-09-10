@@ -2,6 +2,22 @@
 
 All notable changes to Alpha Lab Beta are documented here.
 
+## 0.2.0-beta.1 — 2026-09-10
+
+### Added
+
+- English/Chinese language selector with English as the public default
+- Lightweight first-visit guide and an isolated, resettable guest workspace
+- Guided three-step transaction entry with quick buy, sell, and cash actions
+- Portfolio history curve and a simplified data-health summary
+- Public product and engineering overview for evaluators
+
+### Improved
+
+- CSV import can intentionally replace demo fixtures with an isolated user ledger
+- Mobile navigation, onboarding, transaction entry, and analytical layouts
+- Public documentation now reflects anonymous guest access and 23 deterministic tests
+
 ## 0.1.0-beta.1 — 2026-09-08
 
 ### Added
@@ -22,4 +38,3 @@ All notable changes to Alpha Lab Beta are documented here.
 - Public deployment contains no personal-use market-data API key.
 - Manual fund NAV remains the default legal, auditable workflow for unsupported funds.
 - Decision-review scoring and broker OAuth are outside this Beta scope.
-

@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useLayoutEffect, useMemo, useState } from "react";
-import { installTranslations, type Language } from "../lib/i18n";
+import { installTranslations, translateText, type Language } from "../lib/i18n";
 import { calculatePortfolio, currencyRate, runScenario, type ScenarioShock } from "../lib/portfolio";
 import { normalizeTradeDate, transactionAmountPreview } from "../lib/transaction-form";
 import { transactionFingerprint } from "../lib/transaction-fingerprint";
@@ -14,7 +14,7 @@ import type {
   TransactionType,
 } from "../lib/types";
 
-type View = "portfolio" | "ledger" | "thesis" | "scenario" | "memo" | "data";
+type View = "portfolio" | "ledger" | "thesis" | "scenario" | "memo" | "data" | "about";
 type Notice = { tone: "info" | "success" | "error"; text: string } | null;
 type TransactionDraft = {
   accountId: string;
@@ -41,6 +41,7 @@ const views: Array<{ id: View; label: string; short: string }> = [
   { id: "scenario", label: "情景实验室", short: "情景" },
   { id: "memo", label: "每周备忘", short: "备忘" },
   { id: "data", label: "数据与更新", short: "数据" },
+  { id: "about", label: "关于项目", short: "关于" },
 ];
 
 const currencyLabels: Record<Currency, string> = {
@@ -118,6 +119,8 @@ export function AlphaLab({
   const [costMethod, setCostMethod] = useState<CostMethod>("WEIGHTED_AVERAGE");
   const [notice, setNotice] = useState<Notice>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [resettingDemo, setResettingDemo] = useState(false);
   const [language, setLanguage] = useState<Language>(() => {
     if (typeof window === "undefined") return "en";
     return window.localStorage.getItem("alpha-language") === "zh" ? "zh" : "en";
@@ -157,6 +160,12 @@ export function AlphaLab({
     else document.documentElement.dataset.theme = theme;
     window.localStorage.setItem("alpha-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (isGuest && window.localStorage.getItem("alpha-beta-welcome") !== "dismissed") {
+      setShowWelcome(true);
+    }
+  }, [isGuest]);
 
   useEffect(() => {
     if (!isOlderThan90Minutes(initialData.lastSuccessfulUpdateAt)) return;
@@ -233,6 +242,29 @@ export function AlphaLab({
     window.scrollTo({ top: 0 });
   }
 
+  function dismissWelcome(nextView: View = "portfolio") {
+    window.localStorage.setItem("alpha-beta-welcome", "dismissed");
+    setShowWelcome(false);
+    selectView(nextView);
+  }
+
+  async function resetDemo() {
+    if (!confirmUi("重置会清除你在当前访客空间的修改，并恢复演示数据。继续？")) return;
+    setResettingDemo(true);
+    try {
+      const response = await fetch("/api/guest/reset", { method: "POST" });
+      const result = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(result.error ?? "无法重置演示空间");
+      await reloadData();
+      setNotice({ tone: "success", text: "演示空间已恢复，可以重新体验所有功能" });
+      selectView("portfolio");
+    } catch (error) {
+      setNotice({ tone: "error", text: error instanceof Error ? error.message : "无法重置演示空间" });
+    } finally {
+      setResettingDemo(false);
+    }
+  }
+
   const money = (value: number | null | undefined) =>
     formatMoney(value, currency, displayRate);
 
@@ -275,22 +307,50 @@ export function AlphaLab({
 
       <main className="workspace">
         {isGuest ? (
-          <div className="notice info" role="status">
-            这是独立的访客演示空间；预置内容均为明确标注的示例数据，不是任何人的真实持仓。
+          <div className="demo-ribbon" role="status">
+            <div><strong>独立演示空间</strong><span>示例数据与你的操作只存在于当前访客空间，不是任何人的真实持仓。</span></div>
+            <div className="demo-ribbon-actions">
+              <button className="text-button" type="button" onClick={() => setShowWelcome(true)}>使用指南</button>
+              <button className="text-button" type="button" onClick={() => void resetDemo()} disabled={resettingDemo}>{resettingDemo ? "重置中" : "重置演示"}</button>
+            </div>
           </div>
+        ) : null}
+        {showWelcome ? (
+          <section className="welcome-card" aria-labelledby="welcome-title">
+            <div className="welcome-copy">
+              <span className="welcome-kicker">PUBLIC BETA · ISOLATED DEMO</span>
+              <h1 id="welcome-title">从一笔交易，到一套可核对的投资决策。</h1>
+              <p>体验真实成本、收益归因、价格审计与投资逻辑。所有预置记录都明确标注为演示数据。</p>
+            </div>
+            <ol className="welcome-steps">
+              <li><span>01</span><div><strong>查看组合</strong><small>先看成本、收益和价格时间。</small></div></li>
+              <li><span>02</span><div><strong>试录交易</strong><small>重复成交会自动拦截。</small></div></li>
+              <li><span>03</span><div><strong>运行情景</strong><small>改变假设，不改正式账本。</small></div></li>
+            </ol>
+            <div className="welcome-actions">
+              <button className="primary-button" type="button" onClick={() => dismissWelcome("portfolio")}>开始体验</button>
+              <button className="secondary-button" type="button" onClick={() => dismissWelcome("ledger")}>直接试录交易</button>
+            </div>
+          </section>
         ) : null}
         <header className="workspace-header">
           <h1>{viewTitle(view)}</h1>
           <div className="header-actions">
-            {view !== "portfolio" ? <DataFreshness data={data} /> : null}
-            <label className="compact-select">
+            {view !== "portfolio" && view !== "about" ? <DataFreshness data={data} /> : null}
+            <label className="compact-select mobile-language-select">
+              <span className="sr-only">Language</span>
+              <select value={language} onChange={(event) => setLanguage(event.target.value as Language)}>
+                <option value="en">EN</option><option value="zh">中文</option>
+              </select>
+            </label>
+            {view !== "about" ? <label className="compact-select">
               <span className="sr-only">显示货币</span>
               <select value={currency} onChange={(event) => setCurrency(event.target.value as Currency)}>
                 {(Object.keys(currencyLabels) as Currency[]).map((item) => (
                   <option key={item} value={item}>{currencyLabels[item]}</option>
                 ))}
               </select>
-            </label>
+            </label> : null}
             <label className="compact-select theme-select">
               <span className="sr-only">主题</span>
               <select value={theme} onChange={(event) => setTheme(event.target.value as typeof theme)}>
@@ -299,9 +359,9 @@ export function AlphaLab({
                 <option value="dark">深色</option>
               </select>
             </label>
-            <button className="primary-button" onClick={refreshData} disabled={refreshing} type="button">
+            {view !== "about" ? <button className="primary-button" onClick={refreshData} disabled={refreshing} type="button">
               {refreshing ? "更新中" : "刷新数据"}
-            </button>
+            </button> : null}
           </div>
         </header>
 
@@ -351,6 +411,7 @@ export function AlphaLab({
             refreshing={refreshing}
           />
         ) : null}
+        {view === "about" ? <AboutView /> : null}
       </main>
     </div>
   );
@@ -440,6 +501,7 @@ function PortfolioView({
           <div><span>今日价格影响（估算）</span><strong className={toneClass(summary.todayPnlUsd)}>{money(summary.todayPnlUsd)}</strong></div>
           <div><span>累计损益</span><strong className={toneClass(summary.cumulativePnlUsd)}>{money(summary.cumulativePnlUsd)}</strong><small>净投入回报（非年化） {returnRate}</small></div>
         </div>
+        <PerformanceCurve points={data.history.slice(-12)} money={money} />
       </section>
 
       <section className="metric-board primary-metrics" aria-label="组合关键指标">
@@ -527,6 +589,8 @@ function LedgerView({ data, reload, setNotice }: {
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [draft, setDraft] = useState<TransactionDraft>(() => createTransactionDraft(data));
   const assetById = new Map(data.assets.map((asset) => [asset.id, asset]));
   const accountById = new Map(data.accounts.map((account) => [account.id, account]));
@@ -559,6 +623,15 @@ function LedgerView({ data, reload, setNotice }: {
       transaction.id !== editing?.id && transactionFingerprint(transaction) === draftFingerprint
     ) ?? null
     : null;
+  const stepOneReady = Boolean(draft.accountId && (!assetTransaction || draft.assetId));
+  const stepTwoReady = Boolean(
+    draft.tradedAt &&
+    (pricedTransaction ? quantity != null && quantity > 0 && unitPrice != null && unitPrice > 0
+      : amountTransaction ? totalAmount != null && totalAmount > 0
+        : draft.type === "SPLIT" ? quantity != null && quantity > 0
+          : true) &&
+    (draft.currency === "USD" || ((draftNumber(draft.fxToBase) ?? 0) > 0)),
+  );
   const filtered = data.transactions.filter((transaction) => {
     const asset = transaction.assetId ? assetById.get(transaction.assetId) : null;
     const haystack = `${asset?.symbol ?? ""} ${asset?.name ?? ""} ${transaction.note ?? ""} ${transaction.source}`.toLowerCase();
@@ -615,6 +688,8 @@ function LedgerView({ data, reload, setNotice }: {
       const fresh = await reload();
       setEditing(null);
       setAdvancedOpen(false);
+      setEditorOpen(false);
+      setStep(1);
       setDraft(createTransactionDraft(fresh));
       setNotice({ tone: "success", text: wasEditing ? "交易已更新，成本与收益已重新计算" : "交易已写入账本，成本与收益已重新计算" });
     } catch (error) {
@@ -628,17 +703,30 @@ function LedgerView({ data, reload, setNotice }: {
     setEditing(transaction);
     setAdvancedOpen(Boolean(transaction.settlementDate || transaction.fee || transaction.tax || transaction.note));
     setDraft(createTransactionDraft(data, transaction));
+    setEditorOpen(true);
+    setStep(1);
     document.getElementById("transaction-editor")?.scrollIntoView({ behavior: "smooth" });
   }
 
   function cancelEditing() {
     setEditing(null);
     setAdvancedOpen(false);
+    setEditorOpen(false);
+    setStep(1);
     setDraft(createTransactionDraft(data));
   }
 
+  function openEditor(type: TransactionType = "BUY") {
+    setEditing(null);
+    setAdvancedOpen(false);
+    setStep(1);
+    setDraft({ ...createTransactionDraft(data), type });
+    setEditorOpen(true);
+    requestAnimationFrame(() => document.getElementById("transaction-editor")?.scrollIntoView({ behavior: "smooth" }));
+  }
+
   async function deleteTransaction(transaction: LedgerTransaction) {
-    if (!window.confirm("确认删除这笔交易？此操作会改变成本和收益计算。")) return;
+    if (!confirmUi("确认删除这笔交易？此操作会改变成本和收益计算。")) return;
     const response = await fetch(`/api/transactions/${transaction.id}`, { method: "DELETE" });
     const result = await response.json() as { error?: string };
     if (!response.ok) {
@@ -652,10 +740,11 @@ function LedgerView({ data, reload, setNotice }: {
   async function importCsv(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formElement = event.currentTarget;
+    if (data.demoMode && !confirmUi("导入 CSV 会替换当前演示数据，并建立你的独立账本。继续？")) return;
     setImporting(true);
     try {
       const form = new FormData(formElement);
-      form.set("replaceDemo", "false");
+      form.set("replaceDemo", data.demoMode ? "true" : "false");
       const response = await fetch("/api/import/csv", { method: "POST", body: form });
       const result = await response.json() as {
         error?: string;
@@ -686,7 +775,7 @@ function LedgerView({ data, reload, setNotice }: {
     const form = new FormData(formElement);
     const file = form.get("backup");
     if (!(file instanceof File)) return;
-    if (!window.confirm("恢复会替换当前 Alpha Lab 数据。确认继续？")) return;
+    if (!confirmUi("恢复会替换当前 Alpha Lab 数据。确认继续？")) return;
     try {
       const backup = JSON.parse(await file.text()) as unknown;
       const response = await fetch("/api/backup", {
@@ -706,7 +795,17 @@ function LedgerView({ data, reload, setNotice }: {
 
   return (
     <div className="view-stack">
-      <section className="editor-panel transaction-editor" id="transaction-editor">
+      <section className="ledger-command">
+        <div><span>快速录入</span><strong>你做了什么交易？</strong><small>选择动作后，只需完成三步。高级字段默认收起。</small></div>
+        <div className="quick-trade-actions">
+          <button type="button" onClick={() => openEditor("BUY")}>买入</button>
+          <button type="button" onClick={() => openEditor("SELL")}>卖出</button>
+          <button type="button" onClick={() => openEditor("CASH_IN")}>资金转入</button>
+          <button className="primary-button" type="button" onClick={() => openEditor()}>其他交易</button>
+        </div>
+      </section>
+
+      {editorOpen ? <section className="editor-panel transaction-editor" id="transaction-editor">
         <SectionHeading
           title={editing ? "修改交易" : "记录一笔交易"}
           body="只记录已成交；未成交和已撤销订单不用录。系统会自动检查重复。"
@@ -715,7 +814,19 @@ function LedgerView({ data, reload, setNotice }: {
           <InlineEmpty text="尚无账户。先用 CSV 模板导入第一批真实记录，账户与资产会一并建立。" />
         ) : (
           <form className="transaction-form" onSubmit={submitTransaction}>
-            <div className="transaction-primary">
+            <ol className="transaction-steps" aria-label="交易录入步骤">
+              {([{ number: 1, label: "选择交易" }, { number: 2, label: "填写成交" }, { number: 3, label: "核对保存" }] as const).map(({ number, label }) => (
+                <li className={step === number ? "active" : step > number ? "complete" : ""} key={number}>
+                  <button type="button" disabled={number === 2 ? !stepOneReady : number === 3 ? !(stepOneReady && stepTwoReady) : false} onClick={() => setStep(number as 1 | 2 | 3)}>
+                    <span>{number}</span><strong>{label}</strong>
+                  </button>
+                </li>
+              ))}
+            </ol>
+
+            <div className={`transaction-step-panel ${step === 1 ? "active" : ""}`}>
+              <div className="step-heading"><span>STEP 1</span><strong>选择交易</strong><small>先确认方向、账户与标的。</small></div>
+              <div className="transaction-primary">
               <Field label="交易类型">
                 <select name="type" value={draft.type} onChange={(event) => setDraft((current) => ({ ...current, type: event.target.value as TransactionType }))}>
                   {Object.entries(transactionLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
@@ -741,7 +852,13 @@ function LedgerView({ data, reload, setNotice }: {
                   {data.assets.map((asset) => <option key={asset.id} value={asset.id}>{asset.symbol} · {asset.name}</option>)}
                 </select>
               </Field> : null}
+              </div>
+              <div className="step-actions"><button className="primary-button" type="button" disabled={!stepOneReady} onClick={() => setStep(2)}>下一步：填写成交</button></div>
+            </div>
 
+            <div className={`transaction-step-panel ${step === 2 ? "active" : ""}`}>
+              <div className="step-heading"><span>STEP 2</span><strong>填写成交</strong><small>使用券商或基金平台上的实际数字。</small></div>
+              <div className="transaction-primary">
               <Field label="成交日期（以券商为准）">
                 <input name="tradedAt" type="date" value={draft.tradedAt} onChange={(event) => setDraft((current) => ({ ...current, tradedAt: event.target.value }))} required />
               </Field>
@@ -779,42 +896,48 @@ function LedgerView({ data, reload, setNotice }: {
                 <input name="fxToBase" type="number" min="0.00000001" step="any" inputMode="decimal" value={draft.fxToBase} onChange={(event) => setDraft((current) => ({ ...current, fxToBase: event.target.value }))} placeholder="不要用今天汇率代替" required />
                 <small className="field-hint">只填结单所用或可核实的成交日汇率</small>
               </Field> : <input name="fxToBase" type="hidden" value="1" />}
-            </div>
-
-            <div className={`transaction-preview ${duplicate ? "transaction-duplicate" : ""}`} aria-live="polite">
-              <span className="preview-eyebrow">{duplicate ? "发现重复" : "将记录"}</span>
-              <strong className="preview-title">{transactionPreviewTitle(draft, selectedAsset)}</strong>
-              <span className="preview-context">{draft.tradedAt ? formatDate(draft.tradedAt) : "待选择日期"} · {accountById.get(draft.accountId)?.name ?? "待选择账户"}</span>
-              <span className="preview-meta">{duplicate
-                ? "这笔成交已在账本中，不会重复写入。"
-                : transactionPreviewMeta(draft, amountPreview)}</span>
-            </div>
-
-            <details className="transaction-advanced" open={advancedOpen} onToggle={(event) => setAdvancedOpen(event.currentTarget.open)}>
-              <summary><span>费用与更多信息</span><small>手续费、税费、结算与备注</small></summary>
-              <div className="transaction-advanced-grid">
-                {costTransaction ? <>
-                  <Field label="手续费"><input name="fee" type="number" min="0" step="any" inputMode="decimal" value={draft.fee} onChange={(event) => setDraft((current) => ({ ...current, fee: event.target.value }))} /></Field>
-                  <Field label="税费"><input name="tax" type="number" min="0" step="any" inputMode="decimal" value={draft.tax} onChange={(event) => setDraft((current) => ({ ...current, tax: event.target.value }))} /></Field>
-                </> : null}
-                <Field label="结算日期"><input name="settlementDate" type="date" value={draft.settlementDate} onChange={(event) => setDraft((current) => ({ ...current, settlementDate: event.target.value }))} /></Field>
-                <Field label="来源"><input name="source" maxLength={120} value={draft.source} onChange={(event) => setDraft((current) => ({ ...current, source: event.target.value }))} required /></Field>
-                <Field label="备注" wide><textarea name="note" maxLength={500} value={draft.note} onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value }))} placeholder="选填：订单号、费用说明或其他核对线索" /></Field>
               </div>
-            </details>
+              <div className="step-actions"><button className="text-button" type="button" onClick={() => setStep(1)}>返回</button><button className="primary-button" type="button" disabled={!stepTwoReady} onClick={() => setStep(3)}>下一步：核对</button></div>
+            </div>
 
-            <label className="reconcile-toggle" htmlFor="transaction-reconciled">
-              <input id="transaction-reconciled" name="reconciled" type="checkbox" checked={draft.reconciled} onChange={(event) => setDraft((current) => ({ ...current, reconciled: event.target.checked }))} />
-              <span className="reconcile-copy">已核对原始成交记录<small>数量、成交价和费用都与券商或基金平台记录一致时再勾选</small></span>
-            </label>
+            <div className={`transaction-step-panel ${step === 3 ? "active" : ""}`}>
+              <div className="step-heading"><span>STEP 3</span><strong>核对并保存</strong><small>保存前再看一眼关键信息。</small></div>
+              <div className={`transaction-preview ${duplicate ? "transaction-duplicate" : ""}`} aria-live="polite">
+                <span className="preview-eyebrow">{duplicate ? "发现重复" : "将记录"}</span>
+                <strong className="preview-title">{transactionPreviewTitle(draft, selectedAsset)}</strong>
+                <span className="preview-context">{draft.tradedAt ? formatDate(draft.tradedAt) : "待选择日期"} · {accountById.get(draft.accountId)?.name ?? "待选择账户"}</span>
+                <span className="preview-meta">{duplicate
+                  ? "这笔成交已在账本中，不会重复写入。"
+                  : transactionPreviewMeta(draft, amountPreview)}</span>
+              </div>
 
-            <div className="transaction-submit-bar">
-              {editing ? <button className="text-button" type="button" onClick={cancelEditing}>取消编辑</button> : null}
-              <button className="primary-button" disabled={saving || Boolean(duplicate)} type="submit">{saving ? "保存中" : editing ? "保存修改" : transactionSubmitLabels[draft.type]}</button>
+              <details className="transaction-advanced" open={advancedOpen} onToggle={(event) => setAdvancedOpen(event.currentTarget.open)}>
+                <summary><span>费用与更多信息</span><small>手续费、税费、结算与备注</small></summary>
+                <div className="transaction-advanced-grid">
+                  {costTransaction ? <>
+                    <Field label="手续费"><input name="fee" type="number" min="0" step="any" inputMode="decimal" value={draft.fee} onChange={(event) => setDraft((current) => ({ ...current, fee: event.target.value }))} /></Field>
+                    <Field label="税费"><input name="tax" type="number" min="0" step="any" inputMode="decimal" value={draft.tax} onChange={(event) => setDraft((current) => ({ ...current, tax: event.target.value }))} /></Field>
+                  </> : null}
+                  <Field label="结算日期"><input name="settlementDate" type="date" value={draft.settlementDate} onChange={(event) => setDraft((current) => ({ ...current, settlementDate: event.target.value }))} /></Field>
+                  <Field label="来源"><input name="source" maxLength={120} value={draft.source} onChange={(event) => setDraft((current) => ({ ...current, source: event.target.value }))} required /></Field>
+                  <Field label="备注" wide><textarea name="note" maxLength={500} value={draft.note} onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value }))} placeholder="选填：订单号、费用说明或其他核对线索" /></Field>
+                </div>
+              </details>
+
+              <label className="reconcile-toggle" htmlFor="transaction-reconciled">
+                <input id="transaction-reconciled" name="reconciled" type="checkbox" checked={draft.reconciled} onChange={(event) => setDraft((current) => ({ ...current, reconciled: event.target.checked }))} />
+                <span className="reconcile-copy">已核对原始成交记录<small>数量、成交价和费用都与券商或基金平台记录一致时再勾选</small></span>
+              </label>
+
+              <div className="transaction-submit-bar">
+                <button className="text-button" type="button" onClick={() => setStep(2)}>返回修改</button>
+                <button className="text-button" type="button" onClick={cancelEditing}>{editing ? "取消编辑" : "取消"}</button>
+                <button className="primary-button" disabled={saving || Boolean(duplicate)} type="submit">{saving ? "保存中" : editing ? "保存修改" : transactionSubmitLabels[draft.type]}</button>
+              </div>
             </div>
           </form>
         )}
-      </section>
+      </section> : null}
 
       <section className="analysis-section">
         <SectionHeading title="正式账本" body={`${data.transactions.length} 笔记录，按成交日期倒序。资金转入不会被计入投资收益。`} />
@@ -850,7 +973,7 @@ function LedgerView({ data, reload, setNotice }: {
           <SectionHeading title="导入批次" body="删除批次会同时删除该批次写入的交易，不影响其他来源。" />
           <div className="batch-grid">{data.importBatches.map((batch) => (
             <article key={batch.id}><div><strong>{batch.filename ?? batch.source}</strong><small>{batch.rowCount} 行，{formatDateTime(batch.createdAt)}</small></div><button type="button" onClick={async () => {
-              if (!window.confirm("确认删除整个导入批次？")) return;
+              if (!confirmUi("确认删除整个导入批次？")) return;
               const response = await fetch(`/api/imports/${batch.id}`, { method: "DELETE" });
               if (response.ok) { await reload(); setNotice({ tone: "success", text: "导入批次已删除" }); }
               else setNotice({ tone: "error", text: "无法删除导入批次" });
@@ -1050,6 +1173,9 @@ function DataView({ data, summary, reload, setNotice, refreshData, refreshing }:
   refreshing: boolean;
 }) {
   const funds = data.assets.filter((asset) => asset.assetType === "FUND");
+  const pricedHoldings = summary?.positions.filter((position) => position.price != null).length ?? 0;
+  const totalHoldings = summary?.positions.length ?? 0;
+  const sourceErrors = data.dataSources.filter((source) => source.lastError).length;
   async function saveNav(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formElement = event.currentTarget;
@@ -1071,12 +1197,17 @@ function DataView({ data, summary, reload, setNotice, refreshData, refreshing }:
         <div><span>最近成功更新</span><strong>{data.lastSuccessfulUpdateAt ? formatDateTime(data.lastSuccessfulUpdateAt) : "尚未成功执行"}</strong><small>{data.updateStatus ? `最近运行 ${data.updateStatus.status}，${data.updateStatus.successCount} 成功，${data.updateStatus.failureCount} 失败` : "暂无更新记录"}</small></div>
         <button className="primary-button" onClick={refreshData} disabled={refreshing} type="button">{refreshing ? "更新中" : "立即刷新"}</button>
       </section>
-      <section className="analysis-section">
-        <SectionHeading title="数据来源" body="行情、基金净值和汇率分开记录。没有新数据时保留最近有效值，并显示原始日期。" />
-        <div className="source-grid">{data.dataSources.map((source) => (
+      <section className="data-health-grid" aria-label="数据健康概览">
+        <div><span>持仓定价</span><strong>{pricedHoldings}/{totalHoldings}</strong><small>有可审计价格的当前持仓</small></div>
+        <div><span>待处理问题</span><strong className={sourceErrors ? "negative-number" : "positive-number"}>{sourceErrors}</strong><small>数据源最近错误</small></div>
+        <div><span>汇率记录</span><strong>{latestFx(data.fxRates).length}</strong><small>当前可用货币对</small></div>
+      </section>
+      <details className="analysis-disclosure data-details">
+        <summary><span>查看数据来源</span><small>行情、基金净值与汇率的完整状态</small></summary>
+        <div className="analysis-disclosure-body source-grid">{data.dataSources.map((source) => (
           <article key={source.id}><header><strong>{source.provider}</strong><span>{source.enabled ? "启用" : "停用"}</span></header><p>{source.label}</p><small>{source.delayDescription}</small><dl><div><dt>最近成功</dt><dd>{source.lastSuccessAt ? formatDateTime(source.lastSuccessAt) : "尚无"}</dd></div><div><dt>最近错误</dt><dd>{source.lastError ?? "无"}</dd></div></dl></article>
         ))}</div>
-      </section>
+      </details>
       <section className="editor-panel">
         <SectionHeading title="确认基金 NAV" body="只有人工确认的净值会进入正式数据库。请同时保留基金公布的原始净值日期。" />
         {funds.length ? <form className="nav-form" onSubmit={saveNav}><Field label="基金"><select name="assetId">{funds.map((fund) => <option key={fund.id} value={fund.id}>{fund.symbol}，{fund.name}</option>)}</select></Field><Field label="NAV"><input name="nav" type="number" min="0" step="any" required /></Field><Field label="净值日期"><input name="navDate" type="date" max={todayDate()} required /></Field><button className="primary-button" type="submit">确认并写入</button></form> : <InlineEmpty text="账本中还没有基金资产。导入基金申购记录后可在此维护 NAV。" />}
@@ -1098,10 +1229,61 @@ function DataView({ data, summary, reload, setNotice, refreshData, refreshing }:
   );
 }
 
+function AboutView() {
+  return (
+    <div className="view-stack about-view">
+      <section className="about-hero">
+        <span className="about-kicker">ALPHA LAB · PUBLIC BETA</span>
+        <h2>An investment workspace built for evidence, not excitement.</h2>
+        <p>Alpha Lab connects the transaction ledger, portfolio math, price provenance and the original investment thesis—so every number can be traced and every decision can be reviewed.</p>
+        <div className="about-principles">
+          <span>Auditable by design</span><span>Private by account</span><span>No AI stock picks</span>
+        </div>
+      </section>
+      <section className="about-grid">
+        <article><span>01</span><h3>Ledger-first accounting</h3><p>Weighted-average and FIFO cost basis, fees, taxes, cash flows, funds, splits and duplicate-trade protection all begin with the underlying transaction record.</p></article>
+        <article><span>02</span><h3>Honest market data</h3><p>Price date, quote time, provider and delay status remain visible. Missing data stays missing; a request timestamp never masquerades as today’s price.</p></article>
+        <article><span>03</span><h3>Decision quality</h3><p>Versioned investment theses and scenario tests separate the original reasoning from hindsight and keep forecasts out of the official ledger.</p></article>
+        <article><span>04</span><h3>Production architecture</h3><p>React and Vinext run on a Cloudflare Worker with owner-scoped D1 persistence, signed guest sessions and deterministic financial-calculation tests.</p></article>
+      </section>
+      <section className="about-note"><strong>Public Beta boundary</strong><p>This demo does not execute trades or provide personalized investment advice. Anonymous visitors receive isolated example data and may reset the workspace at any time.</p></section>
+    </div>
+  );
+}
+
 function DataFreshness({ data }: { data: LabData }) {
   const stale = isOlderThan90Minutes(data.lastSuccessfulUpdateAt);
   const failed = data.updateStatus?.status === "FAILED" || data.updateStatus?.status === "PARTIAL";
   return <div className={`freshness ${stale || failed ? "attention" : "current"}`}><strong>{!data.lastSuccessfulUpdateAt ? "未更新" : failed ? "部分更新" : stale ? "数据过期" : "数据已更新"}</strong><small>{data.lastSuccessfulUpdateAt ? formatDateTime(data.lastSuccessfulUpdateAt) : "等待首次真实写入"}</small></div>;
+}
+
+function PerformanceCurve({ points, money }: {
+  points: LabData["history"];
+  money: (value: number | null | undefined) => string;
+}) {
+  if (points.length < 2) {
+    return <div className="portfolio-curve curve-empty"><span>组合轨迹</span><small>每日快照写入后，这里会形成可核对的历史曲线。</small></div>;
+  }
+  const values = points.map((point) => point.portfolio);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const coordinates = points.map((point, index) => ({
+    x: points.length === 1 ? 50 : (index / (points.length - 1)) * 100,
+    y: 43 - ((point.portfolio - min) / range) * 34,
+  }));
+  const line = coordinates.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(2)},${point.y.toFixed(2)}`).join(" ");
+  const area = `${line} L100,48 L0,48 Z`;
+  const change = values.at(-1)! - values[0];
+  return (
+    <div className="portfolio-curve">
+      <div className="curve-heading"><div><span>组合轨迹</span><small>{formatDate(points[0].date)} – {formatDate(points.at(-1)!.date)}</small></div><strong className={toneClass(change)}>{money(change)}</strong></div>
+      <svg viewBox="0 0 100 50" role="img" aria-label="组合历史价值曲线" preserveAspectRatio="none">
+        <path className="curve-area" d={area} />
+        <path className="curve-line" d={line} />
+      </svg>
+    </div>
+  );
 }
 
 function AllocationList({ title, rows, money }: {
@@ -1140,6 +1322,7 @@ function viewTitle(view: View) {
     scenario: "情景压力测试",
     memo: "每周投资备忘",
     data: "数据状态",
+    about: "关于 Alpha Lab",
   };
   return titles[view];
 }
@@ -1205,6 +1388,11 @@ function todayDate() {
   const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
   const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${values.year}-${values.month}-${values.day}`;
+}
+
+function confirmUi(message: string) {
+  const language = window.localStorage.getItem("alpha-language") === "zh" ? "zh" : "en";
+  return window.confirm(translateText(message, language));
 }
 
 function createTransactionDraft(data: LabData, editing?: LedgerTransaction | null): TransactionDraft {

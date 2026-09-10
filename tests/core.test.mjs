@@ -338,6 +338,8 @@ test("the bilingual UI ships with an installable English translator", () => {
   assert.equal(typeof installTranslations, "function");
   assert.equal(translateText("组合总览", "en"), "Portfolio overview");
   assert.equal(translateText("3 笔交易待核对", "en"), "3 transactions need review");
+  assert.equal(translateText("关于项目", "en"), "About the project");
+  assert.equal(translateText("Record a trade", "zh"), "直接试录交易");
   assert.equal(translateText("Portfolio overview", "zh"), "组合总览");
 });
 
