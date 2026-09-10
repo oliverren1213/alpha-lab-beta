@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { installTranslations, type Language } from "../lib/i18n";
 import { calculatePortfolio, currencyRate, runScenario, type ScenarioShock } from "../lib/portfolio";
 import { normalizeTradeDate, transactionAmountPreview } from "../lib/transaction-form";
 import { transactionFingerprint } from "../lib/transaction-fingerprint";
@@ -117,11 +118,20 @@ export function AlphaLab({
   const [costMethod, setCostMethod] = useState<CostMethod>("WEIGHTED_AVERAGE");
   const [notice, setNotice] = useState<Notice>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [language, setLanguage] = useState<Language>(() => {
+    if (typeof window === "undefined") return "en";
+    return window.localStorage.getItem("alpha-language") === "zh" ? "zh" : "en";
+  });
   const [theme, setTheme] = useState<"system" | "light" | "dark">(() => {
     if (typeof window === "undefined") return "system";
     const saved = window.localStorage.getItem("alpha-theme");
     return saved === "light" || saved === "dark" ? saved : "system";
   });
+
+  useLayoutEffect(() => {
+    window.localStorage.setItem("alpha-language", language);
+    return installTranslations(language);
+  }, [language]);
 
   const portfolio = useMemo(() => {
     try {
@@ -251,6 +261,13 @@ export function AlphaLab({
           </nav>
           <div className="topbar-actions">
             <span className="user-badge" title={displayName}>{displayName}</span>
+            <label className="compact-select language-select">
+              <span className="sr-only">Language</span>
+              <select value={language} onChange={(event) => setLanguage(event.target.value as Language)}>
+                <option value="en">English</option>
+                <option value="zh">中文</option>
+              </select>
+            </label>
             {!isGuest ? <button className="text-button" onClick={logout} type="button">退出</button> : null}
           </div>
         </div>

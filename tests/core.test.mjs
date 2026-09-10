@@ -18,6 +18,7 @@ const { scheduledRomeMode, olderThan90Minutes } =
 const { parseCsv, stringifyCsv } = await vite.ssrLoadModule("/lib/csv.ts");
 const { transactionFingerprint } = await vite.ssrLoadModule("/lib/transaction-fingerprint.ts");
 const { createGuestToken, verifyGuestToken } = await vite.ssrLoadModule("/lib/guest-session.ts");
+const { installTranslations, translateText } = await vite.ssrLoadModule("/lib/i18n.ts");
 const { normalizeTradeDate, transactionAmountPreview } =
   await vite.ssrLoadModule("/lib/transaction-form.ts");
 const { FinnhubQuoteProvider, previousTradingDate } =
@@ -331,6 +332,13 @@ test("guest sessions are signed and reject tampering", async () => {
   const session = await createGuestToken("test-secret-with-enough-entropy", "11111111-1111-4111-8111-111111111111");
   assert.equal(await verifyGuestToken("test-secret-with-enough-entropy", session.token), session.ownerId);
   assert.equal(await verifyGuestToken("test-secret-with-enough-entropy", `${session.token}x`), null);
+});
+
+test("the bilingual UI ships with an installable English translator", () => {
+  assert.equal(typeof installTranslations, "function");
+  assert.equal(translateText("组合总览", "en"), "Portfolio overview");
+  assert.equal(translateText("3 笔交易待核对", "en"), "3 transactions need review");
+  assert.equal(translateText("Portfolio overview", "zh"), "组合总览");
 });
 
 test("transaction form keeps broker dates stable and previews cash impact", () => {
