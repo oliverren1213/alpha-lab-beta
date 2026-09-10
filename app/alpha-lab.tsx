@@ -267,6 +267,7 @@ export function AlphaLab({
 
   const money = (value: number | null | undefined) =>
     formatMoney(value, currency, displayRate);
+  const t = (value: string) => translateText(value, language);
 
   return (
     <div className="alpha-app">
@@ -276,18 +277,18 @@ export function AlphaLab({
             <span className="brand-mark" aria-hidden="true">α</span>
             <strong>Alpha Lab <span>Beta</span></strong>
           </div>
-          <nav className="primary-nav" aria-label="主要导航">
+          <nav className="primary-nav" aria-label={t("主要导航")}>
             {views.map((item) => (
               <button
                 key={item.id}
                 aria-current={view === item.id ? "page" : undefined}
-                aria-label={item.label}
+                aria-label={t(item.label)}
                 className={view === item.id ? "active" : ""}
                 onClick={() => selectView(item.id)}
-                title={item.label}
+                title={t(item.label)}
                 type="button"
               >
-                {item.short}
+                {t(item.short)}
               </button>
             ))}
           </nav>
@@ -334,7 +335,7 @@ export function AlphaLab({
           </section>
         ) : null}
         <header className="workspace-header">
-          <h1>{viewTitle(view)}</h1>
+          <h1>{t(viewTitle(view))}</h1>
           <div className="header-actions">
             {view !== "portfolio" && view !== "about" ? <DataFreshness data={data} /> : null}
             <label className="compact-select mobile-language-select">
@@ -411,7 +412,7 @@ export function AlphaLab({
             refreshing={refreshing}
           />
         ) : null}
-        {view === "about" ? <AboutView /> : null}
+        {view === "about" ? <AboutView language={language} /> : null}
       </main>
     </div>
   );
@@ -1229,24 +1230,25 @@ function DataView({ data, summary, reload, setNotice, refreshData, refreshing }:
   );
 }
 
-function AboutView() {
+function AboutView({ language }: { language: Language }) {
+  const t = (value: string) => translateText(value, language);
   return (
     <div className="view-stack about-view">
       <section className="about-hero">
         <span className="about-kicker">ALPHA LAB · PUBLIC BETA</span>
-        <h2>An investment workspace built for evidence, not excitement.</h2>
-        <p>Alpha Lab connects the transaction ledger, portfolio math, price provenance and the original investment thesis—so every number can be traced and every decision can be reviewed.</p>
+        <h2>{t("An investment workspace built for evidence, not excitement.")}</h2>
+        <p>{t("Alpha Lab connects the transaction ledger, portfolio math, price provenance and the original investment thesis—so every number can be traced and every decision can be reviewed.")}</p>
         <div className="about-principles">
-          <span>Auditable by design</span><span>Private by account</span><span>No AI stock picks</span>
+          <span>{t("Auditable by design")}</span><span>{t("Private by account")}</span><span>{t("No AI stock picks")}</span>
         </div>
       </section>
       <section className="about-grid">
-        <article><span>01</span><h3>Ledger-first accounting</h3><p>Weighted-average and FIFO cost basis, fees, taxes, cash flows, funds, splits and duplicate-trade protection all begin with the underlying transaction record.</p></article>
-        <article><span>02</span><h3>Honest market data</h3><p>Price date, quote time, provider and delay status remain visible. Missing data stays missing; a request timestamp never masquerades as today’s price.</p></article>
-        <article><span>03</span><h3>Decision quality</h3><p>Versioned investment theses and scenario tests separate the original reasoning from hindsight and keep forecasts out of the official ledger.</p></article>
-        <article><span>04</span><h3>Production architecture</h3><p>React and Vinext run on a Cloudflare Worker with owner-scoped D1 persistence, signed guest sessions and deterministic financial-calculation tests.</p></article>
+        <article><span>01</span><h3>{t("Ledger-first accounting")}</h3><p>{t("Weighted-average and FIFO cost basis, fees, taxes, cash flows, funds, splits and duplicate-trade protection all begin with the underlying transaction record.")}</p></article>
+        <article><span>02</span><h3>{t("Honest market data")}</h3><p>{t("Price date, quote time, provider and delay status remain visible. Missing data stays missing; a request timestamp never masquerades as today’s price.")}</p></article>
+        <article><span>03</span><h3>{t("Decision quality")}</h3><p>{t("Versioned investment theses and scenario tests separate the original reasoning from hindsight and keep forecasts out of the official ledger.")}</p></article>
+        <article><span>04</span><h3>{t("Production architecture")}</h3><p>{t("React and Vinext run on a Cloudflare Worker with owner-scoped D1 persistence, signed guest sessions and deterministic financial-calculation tests.")}</p></article>
       </section>
-      <section className="about-note"><strong>Public Beta boundary</strong><p>This demo does not execute trades or provide personalized investment advice. Anonymous visitors receive isolated example data and may reset the workspace at any time.</p></section>
+      <section className="about-note"><strong>{t("Public Beta boundary")}</strong><p>{t("This demo does not execute trades or provide personalized investment advice. Anonymous visitors receive isolated example data and may reset the workspace at any time.")}</p></section>
     </div>
   );
 }

@@ -339,6 +339,8 @@ test("the bilingual UI ships with an installable English translator", () => {
   assert.equal(translateText("组合总览", "en"), "Portfolio overview");
   assert.equal(translateText("3 笔交易待核对", "en"), "3 transactions need review");
   assert.equal(translateText("关于项目", "en"), "About the project");
+  assert.equal(translateText("关于 Alpha Lab", "en"), "About Alpha Lab");
+  assert.equal(translateText("An investment workspace built for evidence, not excitement.", "zh"), "一个为证据而生，而不是为情绪而生的投资工作台。");
   assert.equal(translateText("Record a trade", "zh"), "直接试录交易");
   assert.equal(translateText("Portfolio overview", "zh"), "组合总览");
 });

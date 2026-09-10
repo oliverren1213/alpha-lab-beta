@@ -138,14 +138,14 @@ const englishByChinese: Record<string, string> = {
   "导入 CSV 会替换当前演示数据，并建立你的独立账本。继续？": "Importing this CSV replaces the demo data and creates your isolated ledger. Continue?",
   "恢复会替换当前 Alpha Lab 数据。确认继续？": "Restoring replaces the current Alpha Lab data. Continue?",
   "确认删除整个导入批次？": "Delete this entire import batch?",
-  "An investment workspace built for evidence, not excitement.": "一个为证据而生，而不是为情绪而生的投资工作台。",
-  "Alpha Lab connects the transaction ledger, portfolio math, price provenance and the original investment thesis—so every number can be traced and every decision can be reviewed.": "Alpha Lab 把交易账本、组合计算、价格来源和原始投资逻辑连接起来，让每个数字可追溯、每个决策可复盘。",
-  "Auditable by design": "从设计开始即可核对", "Private by account": "账户级数据隔离", "No AI stock picks": "不做 AI 荐股",
-  "Ledger-first accounting": "账本优先的核算", "Weighted-average and FIFO cost basis, fees, taxes, cash flows, funds, splits and duplicate-trade protection all begin with the underlying transaction record.": "加权平均与 FIFO 成本、费用、税费、现金流、基金、拆股和重复交易保护，全部以原始交易记录为起点。",
-  "Honest market data": "诚实的行情数据", "Price date, quote time, provider and delay status remain visible. Missing data stays missing; a request timestamp never masquerades as today’s price.": "价格日期、报价时间、来源和延迟状态始终可见。缺失数据保持缺失，请求时间不会伪装成今日价格。",
-  "Decision quality": "决策质量", "Versioned investment theses and scenario tests separate the original reasoning from hindsight and keep forecasts out of the official ledger.": "版本化投资逻辑和情景测试把原始判断与后见之明分开，也不会把预测写进正式账本。",
-  "Production architecture": "生产级架构", "React and Vinext run on a Cloudflare Worker with owner-scoped D1 persistence, signed guest sessions and deterministic financial-calculation tests.": "React 与 Vinext 运行于 Cloudflare Worker，并采用账户隔离的 D1 持久化、签名访客会话和确定性的金融计算测试。",
-  "Public Beta boundary": "Public Beta 边界", "This demo does not execute trades or provide personalized investment advice. Anonymous visitors receive isolated example data and may reset the workspace at any time.": "此演示不会执行交易，也不提供个性化投资建议。匿名访客获得隔离的示例数据，并可随时重置空间。",
+  "一个为证据而生，而不是为情绪而生的投资工作台。": "An investment workspace built for evidence, not excitement.",
+  "Alpha Lab 把交易账本、组合计算、价格来源和原始投资逻辑连接起来，让每个数字可追溯、每个决策可复盘。": "Alpha Lab connects the transaction ledger, portfolio math, price provenance and the original investment thesis—so every number can be traced and every decision can be reviewed.",
+  "从设计开始即可核对": "Auditable by design", "账户级数据隔离": "Private by account", "不做 AI 荐股": "No AI stock picks",
+  "账本优先的核算": "Ledger-first accounting", "加权平均与 FIFO 成本、费用、税费、现金流、基金、拆股和重复交易保护，全部以原始交易记录为起点。": "Weighted-average and FIFO cost basis, fees, taxes, cash flows, funds, splits and duplicate-trade protection all begin with the underlying transaction record.",
+  "诚实的行情数据": "Honest market data", "价格日期、报价时间、来源和延迟状态始终可见。缺失数据保持缺失，请求时间不会伪装成今日价格。": "Price date, quote time, provider and delay status remain visible. Missing data stays missing; a request timestamp never masquerades as today’s price.",
+  "决策质量": "Decision quality", "版本化投资逻辑和情景测试把原始判断与后见之明分开，也不会把预测写进正式账本。": "Versioned investment theses and scenario tests separate the original reasoning from hindsight and keep forecasts out of the official ledger.",
+  "生产级架构": "Production architecture", "React 与 Vinext 运行于 Cloudflare Worker，并采用账户隔离的 D1 持久化、签名访客会话和确定性的金融计算测试。": "React and Vinext run on a Cloudflare Worker with owner-scoped D1 persistence, signed guest sessions and deterministic financial-calculation tests.",
+  "Public Beta 边界": "Public Beta boundary", "此演示不会执行交易，也不提供个性化投资建议。匿名访客获得隔离的示例数据，并可随时重置空间。": "This demo does not execute trades or provide personalized investment advice. Anonymous visitors receive isolated example data and may reset the workspace at any time.",
 };
 
 const chineseByEnglish = Object.fromEntries(Object.entries(englishByChinese).map(([zh, en]) => [en, zh]));
