@@ -163,7 +163,8 @@ export function AlphaLab({
 
   useEffect(() => {
     if (isGuest && window.localStorage.getItem("alpha-beta-welcome") !== "dismissed") {
-      setShowWelcome(true);
+      const frame = window.requestAnimationFrame(() => setShowWelcome(true));
+      return () => window.cancelAnimationFrame(frame);
     }
   }, [isGuest]);
 
