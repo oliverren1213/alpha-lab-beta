@@ -1,6 +1,18 @@
 export type Language = "en" | "zh";
 
 const englishByChinese: Record<string, string> = {
+  "公开投资决策实验室": "Public investment decision lab", "演示空间": "DEMO SPACE",
+  "隔离演示": "ISOLATED DEMO", "个人工作区": "PERSONAL WORKSPACE",
+  "把持仓、成本、收益与风险放在同一张清晰的地图里。": "See holdings, cost, returns and risk on one clear map.",
+  "每一笔成交，都能回到来源、成本与核对状态。": "Trace every trade back to its source, cost and verification state.",
+  "记录为什么买，也记录什么会让判断失效。": "Record why you bought—and what would invalidate the thesis.",
+  "先测试波动，再决定现实里要不要承受。": "Test the drawdown here before deciding whether to bear it in reality.",
+  "把本周发生的事，沉淀成下一次更好的决定。": "Turn this week’s events into a better next decision.",
+  "所有价格、净值、汇率与更新时间都有迹可循。": "Trace every price, NAV, FX rate and update timestamp.",
+  "了解产品边界、核心架构与公开演示原则。": "Understand the product boundaries, core architecture and public-demo principles.",
+  "切换主题": "Change theme", "退出登录": "Sign out",
+  "等待更多每日快照": "Waiting for more daily snapshots", "历史快照 + 当前估值": "Historical snapshot + current valuation",
+  "个真实快照": "real snapshots",
   "组合总览": "Portfolio overview", "组合": "Portfolio", "交易账本": "Transaction ledger", "账本": "Ledger",
   "投资逻辑": "Investment theses", "逻辑": "Theses", "情景实验室": "Scenario lab", "情景": "Scenarios",
   "每周备忘": "Weekly memo", "备忘": "Memo", "数据与更新": "Data & updates", "数据": "Data",

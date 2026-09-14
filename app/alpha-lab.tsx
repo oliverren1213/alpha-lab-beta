@@ -44,6 +44,16 @@ const views: Array<{ id: View; label: string; short: string }> = [
   { id: "about", label: "关于项目", short: "关于" },
 ];
 
+const viewDescriptions: Record<View, string> = {
+  portfolio: "把持仓、成本、收益与风险放在同一张清晰的地图里。",
+  ledger: "每一笔成交，都能回到来源、成本与核对状态。",
+  thesis: "记录为什么买，也记录什么会让判断失效。",
+  scenario: "先测试波动，再决定现实里要不要承受。",
+  memo: "把本周发生的事，沉淀成下一次更好的决定。",
+  data: "所有价格、净值、汇率与更新时间都有迹可循。",
+  about: "了解产品边界、核心架构与公开演示原则。",
+};
+
 const currencyLabels: Record<Currency, string> = {
   USD: "USD",
   HKD: "HKD",
@@ -269,43 +279,42 @@ export function AlphaLab({
   const money = (value: number | null | undefined) =>
     formatMoney(value, currency, displayRate);
   const t = (value: string) => translateText(value, language);
+  const nextTheme = theme === "system" ? "light" : theme === "light" ? "dark" : "system";
 
   return (
-    <div className="alpha-app">
+    <div className={`alpha-app alpha-app-v2 ${refreshing ? "is-refreshing" : ""}`} data-view={view}>
+      <div className="app-atmosphere" aria-hidden="true"><span /><span /><span /></div>
       <header className="app-topbar liquid-glass-web-approx">
         <div className="topbar-inner">
           <div className="brand-lockup">
             <span className="brand-mark" aria-hidden="true">α</span>
-            <strong>Alpha Lab <span>Beta</span></strong>
+            <span className="brand-copy"><strong>Alpha Lab <span>Beta</span></strong><small>{t("公开投资决策实验室")}</small></span>
           </div>
-          <nav className="primary-nav" aria-label={t("主要导航")}>
-            {views.map((item) => (
-              <button
-                key={item.id}
-                aria-current={view === item.id ? "page" : undefined}
-                aria-label={t(item.label)}
-                className={view === item.id ? "active" : ""}
-                onClick={() => selectView(item.id)}
-                title={t(item.label)}
-                type="button"
-              >
-                {t(item.short)}
-              </button>
-            ))}
-          </nav>
           <div className="topbar-actions">
-            <span className="user-badge" title={displayName}>{displayName}</span>
-            <label className="compact-select language-select">
-              <span className="sr-only">Language</span>
-              <select value={language} onChange={(event) => setLanguage(event.target.value as Language)}>
-                <option value="en">English</option>
-                <option value="zh">中文</option>
-              </select>
-            </label>
-            {!isGuest ? <button className="text-button" onClick={logout} type="button">退出</button> : null}
+            <div className="topbar-freshness"><DataFreshness data={data} /></div>
+            <span className="beta-badge" title={displayName}>{isGuest ? t("DEMO SPACE") : displayName}</span>
+            <button className="glass-icon-button language-toggle" onClick={() => setLanguage(language === "zh" ? "en" : "zh")} type="button" aria-label={language === "zh" ? "Switch to English" : "切换至中文"}>{language === "zh" ? "EN" : "中"}</button>
+            <button className="glass-icon-button theme-toggle" onClick={() => setTheme(nextTheme)} type="button" aria-label={t("切换主题")} title={t("切换主题")}><ThemeIcon theme={theme} /></button>
+            {!isGuest ? <button className="glass-icon-button logout-button" onClick={logout} type="button" aria-label={t("退出登录")} title={t("退出登录")}><span aria-hidden="true">↗</span></button> : null}
           </div>
         </div>
       </header>
+      <nav className="primary-nav" aria-label={t("主要导航")}>
+        {views.map((item) => (
+          <button
+            key={item.id}
+            aria-current={view === item.id ? "page" : undefined}
+            aria-label={t(item.label)}
+            className={view === item.id ? "active" : ""}
+            onClick={() => selectView(item.id)}
+            title={t(item.label)}
+            type="button"
+          >
+            <NavIcon view={item.id} />
+            <span>{t(item.short)}</span>
+          </button>
+        ))}
+      </nav>
 
       <main className="workspace">
         {isGuest ? (
@@ -336,34 +345,25 @@ export function AlphaLab({
           </section>
         ) : null}
         <header className="workspace-header">
-          <h1>{t(viewTitle(view))}</h1>
+          <div className="workspace-title">
+            <span className="workspace-kicker">PUBLIC BETA · {isGuest ? t("ISOLATED DEMO") : t("PERSONAL WORKSPACE")}</span>
+            <h1>{t(viewTitle(view))}</h1>
+            <p>{t(viewDescriptions[view])}</p>
+          </div>
           <div className="header-actions">
-            {view !== "portfolio" && view !== "about" ? <DataFreshness data={data} /> : null}
-            <label className="compact-select mobile-language-select">
-              <span className="sr-only">Language</span>
-              <select value={language} onChange={(event) => setLanguage(event.target.value as Language)}>
-                <option value="en">EN</option><option value="zh">中文</option>
-              </select>
-            </label>
-            {view !== "about" ? <label className="compact-select">
-              <span className="sr-only">显示货币</span>
-              <select value={currency} onChange={(event) => setCurrency(event.target.value as Currency)}>
-                {(Object.keys(currencyLabels) as Currency[]).map((item) => (
-                  <option key={item} value={item}>{currencyLabels[item]}</option>
-                ))}
-              </select>
-            </label> : null}
-            <label className="compact-select theme-select">
-              <span className="sr-only">主题</span>
-              <select value={theme} onChange={(event) => setTheme(event.target.value as typeof theme)}>
-                <option value="system">跟随系统</option>
-                <option value="light">浅色</option>
-                <option value="dark">深色</option>
-              </select>
-            </label>
-            {view !== "about" ? <button className="primary-button" onClick={refreshData} disabled={refreshing} type="button">
-              {refreshing ? "更新中" : "刷新数据"}
-            </button> : null}
+            {view !== "about" ? <>
+              <label className="compact-select">
+                <span className="sr-only">显示货币</span>
+                <select value={currency} onChange={(event) => setCurrency(event.target.value as Currency)}>
+                  {(Object.keys(currencyLabels) as Currency[]).map((item) => (
+                    <option key={item} value={item}>{currencyLabels[item]}</option>
+                  ))}
+                </select>
+              </label>
+              <button className="primary-button refresh-button" onClick={refreshData} disabled={refreshing} type="button">
+                <span className="refresh-symbol" aria-hidden="true">↻</span>{refreshing ? t("更新中") : t("刷新数据")}
+              </button>
+            </> : null}
           </div>
         </header>
 
@@ -379,6 +379,7 @@ export function AlphaLab({
           <div className="notice error" role="alert">缺少 {currencyLabels[currency]} 汇率，金额不会被静默换算为 0。</div>
         ) : null}
 
+        <div className="view-stage" key={view}>
         {view === "portfolio" ? (
           <PortfolioView
             data={data}
@@ -414,9 +415,29 @@ export function AlphaLab({
           />
         ) : null}
         {view === "about" ? <AboutView language={language} /> : null}
+        </div>
       </main>
     </div>
   );
+}
+
+function NavIcon({ view }: { view: View }) {
+  const paths: Record<View, string[]> = {
+    portfolio: ["M3 17l5-5 4 3 8-10", "M4 21h16"],
+    ledger: ["M6 4h12v16H6z", "M9 8h6M9 12h6M9 16h4"],
+    thesis: ["M9 18h6", "M10 21h4", "M8.6 14.5A6 6 0 1 1 15.4 14.5L14 16H10z"],
+    scenario: ["M4 7h16M4 17h16", "M8 4v6M16 14v6"],
+    memo: ["M6 3h9l3 3v15H6z", "M9 10h6M9 14h6M9 18h4"],
+    data: ["M5 6c0-1.7 3.1-3 7-3s7 1.3 7 3-3.1 3-7 3-7-1.3-7-3z", "M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6", "M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"],
+    about: ["M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z", "M12 10v7M12 7h.01"],
+  };
+  return <svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true">{paths[view].map((path) => <path d={path} key={path} />)}</svg>;
+}
+
+function ThemeIcon({ theme }: { theme: "system" | "light" | "dark" }) {
+  if (theme === "light") return <span aria-hidden="true">☼</span>;
+  if (theme === "dark") return <span aria-hidden="true">☾</span>;
+  return <span className="system-theme-icon" aria-hidden="true">◐</span>;
 }
 
 function PortfolioView({
@@ -441,8 +462,8 @@ function PortfolioView({
   if (!data.transactions.length || !summary) {
     return (
       <EmptyState
-        title="先建立真实账本"
-        body="导入结单 CSV 或录入第一笔交易后，这里才会计算持仓、成本和收益。系统不会放入演示持仓。"
+        title="还没有交易记录"
+        body="录入第一笔交易后，这里会计算持仓、真实成本与收益；访客也可以随时重置演示空间。"
         action="打开交易账本"
         onAction={openLedger}
       />
@@ -490,25 +511,41 @@ function PortfolioView({
       ? "账本有待核对项"
       : "账本现金为负";
   const hasUsefulSector = summary.allocation.bySector.some((row) => row.label !== "Unclassified");
+  const trendValues = data.history
+    .slice(-24)
+    .map((point) => point.portfolio)
+    .filter((value): value is number => Number.isFinite(value));
+  if (summary.totalValueUsd != null && (!trendValues.length || trendValues.at(-1) !== summary.totalValueUsd)) {
+    trendValues.push(summary.totalValueUsd);
+  }
 
   return (
     <div className="view-stack">
       <section className="portfolio-hero" aria-labelledby="portfolio-value">
-        <div className="hero-meta">
-          <div><span>账户净值</span><small>{valuationRange} 价格 · {currencyLabels[currency]} 显示</small></div>
-          <DataFreshness data={data} />
+        <div className="hero-orb" aria-hidden="true" />
+        <div className="hero-grid">
+          <div className="hero-value-block">
+            <div className="hero-meta">
+              <div><span>账户净值</span><small>{valuationRange} 价格 · {currencyLabels[currency]} 显示</small></div>
+              <DataFreshness data={data} />
+            </div>
+            <strong id="portfolio-value">{money(summary.totalValueUsd)}</strong>
+            <div className="hero-performance">
+              <div><span>今日价格影响（估算）</span><strong className={toneClass(summary.todayPnlUsd)}>{money(summary.todayPnlUsd)}</strong></div>
+              <div><span>累计损益</span><strong className={toneClass(summary.cumulativePnlUsd)}>{money(summary.cumulativePnlUsd)}</strong><small>净投入回报（非年化） {returnRate}</small></div>
+            </div>
+          </div>
+          <div className="hero-trend">
+            <header><div><span>组合轨迹</span><small>{data.history.length > 1 ? `${data.history.length} 个真实快照` : trendValues.length > 1 ? "历史快照 + 当前估值" : "等待更多每日快照"}</small></div><span className="trend-live"><i />VALUATION</span></header>
+            <PortfolioSparkline values={trendValues} positive={summary.cumulativePnlUsd == null || summary.cumulativePnlUsd >= 0} />
+            <footer><span>{data.history.length ? formatDate(data.history.at(-Math.min(data.history.length, 24))!.date) : "—"}</span><span>{data.lastSuccessfulUpdateAt ? formatDate(data.lastSuccessfulUpdateAt) : data.history.length ? formatDate(data.history.at(-1)!.date) : "—"}</span></footer>
+          </div>
         </div>
-        <strong id="portfolio-value">{money(summary.totalValueUsd)}</strong>
-        <div className="hero-performance">
-          <div><span>今日价格影响（估算）</span><strong className={toneClass(summary.todayPnlUsd)}>{money(summary.todayPnlUsd)}</strong></div>
-          <div><span>累计损益</span><strong className={toneClass(summary.cumulativePnlUsd)}>{money(summary.cumulativePnlUsd)}</strong><small>净投入回报（非年化） {returnRate}</small></div>
-        </div>
-        <PerformanceCurve points={data.history.slice(-12)} money={money} />
       </section>
 
       <section className="metric-board primary-metrics" aria-label="组合关键指标">
         {primaryMetrics.map(([label, value]) => (
-          <div className="metric" key={label}>
+          <div className="metric" key={label} style={{ "--metric-index": primaryMetrics.findIndex(([item]) => item === label) } as React.CSSProperties}>
             <span>{label}</span>
             <strong className={label === "账本现金" ? toneClass(value) : "neutral-number"}>{money(value)}</strong>
           </div>
@@ -1260,33 +1297,28 @@ function DataFreshness({ data }: { data: LabData }) {
   return <div className={`freshness ${stale || failed ? "attention" : "current"}`}><strong>{!data.lastSuccessfulUpdateAt ? "未更新" : failed ? "部分更新" : stale ? "数据过期" : "数据已更新"}</strong><small>{data.lastSuccessfulUpdateAt ? formatDateTime(data.lastSuccessfulUpdateAt) : "等待首次真实写入"}</small></div>;
 }
 
-function PerformanceCurve({ points, money }: {
-  points: LabData["history"];
-  money: (value: number | null | undefined) => string;
-}) {
-  if (points.length < 2) {
-    return <div className="portfolio-curve curve-empty"><span>组合轨迹</span><small>每日快照写入后，这里会形成可核对的历史曲线。</small></div>;
-  }
-  const values = points.map((point) => point.portfolio);
+function PortfolioSparkline({ values, positive }: { values: number[]; positive: boolean }) {
+  if (values.length < 2) return <div className="sparkline-empty">每日快照写入后，这里会形成可核对的历史曲线。</div>;
+  const width = 520;
+  const height = 180;
+  const padding = 8;
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min || 1;
-  const coordinates = points.map((point, index) => ({
-    x: points.length === 1 ? 50 : (index / (points.length - 1)) * 100,
-    y: 43 - ((point.portfolio - min) / range) * 34,
-  }));
-  const line = coordinates.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(2)},${point.y.toFixed(2)}`).join(" ");
-  const area = `${line} L100,48 L0,48 Z`;
-  const change = values.at(-1)! - values[0];
-  return (
-    <div className="portfolio-curve">
-      <div className="curve-heading"><div><span>组合轨迹</span><small>{formatDate(points[0].date)} – {formatDate(points.at(-1)!.date)}</small></div><strong className={toneClass(change)}>{money(change)}</strong></div>
-      <svg viewBox="0 0 100 50" role="img" aria-label="组合历史价值曲线" preserveAspectRatio="none">
-        <path className="curve-area" d={area} />
-        <path className="curve-line" d={line} />
-      </svg>
-    </div>
-  );
+  const points = values.map((value, index) => {
+    const x = padding + index * ((width - padding * 2) / (values.length - 1));
+    const y = height - padding - ((value - min) / range) * (height - padding * 2);
+    return [x, y] as const;
+  });
+  const line = points.map(([x, y], index) => `${index ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ");
+  const area = `${line} L${points.at(-1)![0].toFixed(1)} ${height} L${points[0][0].toFixed(1)} ${height} Z`;
+  return <svg className={`portfolio-sparkline ${positive ? "positive" : "negative"}`} viewBox={`0 0 ${width} ${height}`} role="img" aria-label="组合历史价值曲线" preserveAspectRatio="none">
+    <defs><linearGradient id="portfolio-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="currentColor" stopOpacity=".28" /><stop offset="1" stopColor="currentColor" stopOpacity="0" /></linearGradient></defs>
+    <path className="sparkline-grid" d={`M0 ${height * .33}H${width}M0 ${height * .66}H${width}`} />
+    <path className="sparkline-area" d={area} />
+    <path className="sparkline-line" d={line} pathLength="1" />
+    <circle className="sparkline-point" cx={points.at(-1)![0]} cy={points.at(-1)![1]} r="4" />
+  </svg>;
 }
 
 function AllocationList({ title, rows, money }: {
