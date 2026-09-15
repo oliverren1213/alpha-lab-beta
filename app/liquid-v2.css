@@ -786,9 +786,9 @@ tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 48%, transpar
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgb(8 13 22 / .38);
-  backdrop-filter: blur(18px) saturate(120%);
-  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  background: rgb(7 11 18 / .72);
+  backdrop-filter: blur(30px) saturate(65%);
+  -webkit-backdrop-filter: blur(30px) saturate(65%);
   animation: guide-backdrop-in .32s ease-out both;
 }
 .demo-guide {
@@ -799,12 +799,12 @@ tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 48%, transpar
   min-height: 560px;
   max-height: min(760px, calc(100svh - 48px));
   overflow: hidden;
-  border: 1px solid rgb(255 255 255 / .42);
+  border: 1px solid rgb(255 255 255 / .58);
   border-radius: 34px;
-  background: color-mix(in srgb, var(--surface-solid) 78%, transparent);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / .56), 0 44px 120px rgb(10 22 45 / .34);
-  backdrop-filter: blur(42px) saturate(165%);
-  -webkit-backdrop-filter: blur(42px) saturate(165%);
+  background: color-mix(in srgb, var(--surface-solid) 94%, var(--bg));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .7), 0 44px 120px rgb(3 9 20 / .5);
+  backdrop-filter: blur(18px) saturate(110%);
+  -webkit-backdrop-filter: blur(18px) saturate(110%);
   animation: guide-card-in .52s var(--spring) both;
 }
 .demo-guide::before {
@@ -845,7 +845,7 @@ tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 48%, transpar
   gap: 28px;
   padding: 34px 24px 28px;
   border-right: 1px solid var(--line);
-  background: color-mix(in srgb, var(--surface) 56%, transparent);
+  background: color-mix(in srgb, var(--surface-muted) 76%, var(--bg));
 }
 .guide-brand { display: flex; align-items: center; gap: 12px; }
 .guide-brand > span {
@@ -861,7 +861,7 @@ tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 48%, transpar
 }
 .guide-brand div { display: grid; gap: 2px; }
 .guide-brand strong { font-size: 14px; letter-spacing: -.02em; }
-.guide-brand small { color: var(--text-tertiary); font-size: 8px; font-weight: 800; letter-spacing: .13em; }
+.guide-brand small { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .11em; }
 .guide-rail ol { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
 .guide-rail li button {
   display: grid;
@@ -873,16 +873,16 @@ tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 48%, transpar
   border: 0;
   border-radius: 13px;
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--text-soft);
   text-align: left;
   cursor: pointer;
   transition: color .2s ease, background .2s ease, transform .2s var(--spring);
 }
 .guide-rail li button:hover { background: var(--surface-muted); transform: translateX(2px); }
 .guide-rail li button.active { background: var(--accent-soft); color: var(--accent-strong); }
-.guide-rail li button > span { font-size: 9px; font-weight: 760; font-variant-numeric: tabular-nums; opacity: .65; }
-.guide-rail li button strong { overflow: hidden; font-size: 11px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
-.guide-rail > small { margin-top: auto; color: var(--text-tertiary); font-size: 9px; line-height: 1.55; }
+.guide-rail li button > span { font-size: 11px; font-weight: 760; font-variant-numeric: tabular-nums; opacity: .72; }
+.guide-rail li button strong { overflow: hidden; font-size: 13px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.guide-rail > small { margin-top: auto; color: var(--muted); font-size: 12px; line-height: 1.55; }
 .guide-stage {
   position: relative;
   z-index: 1;
@@ -902,25 +902,25 @@ tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 48%, transpar
   padding: 3px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: color-mix(in srgb, var(--surface-solid) 70%, transparent);
+  background: color-mix(in srgb, var(--surface-solid) 92%, var(--bg));
   box-shadow: inset 0 1px 0 rgb(255 255 255 / .3);
 }
-.guide-language-control > span { margin: 0 6px; color: var(--text-tertiary); font-size: 8px; font-weight: 760; letter-spacing: .05em; text-transform: uppercase; }
+.guide-language-control > span { margin: 0 6px; color: var(--muted); font-size: 11px; font-weight: 760; letter-spacing: .04em; text-transform: uppercase; }
 .guide-language-control button {
   min-height: 28px;
   padding: 0 9px;
   border: 0;
   border-radius: 9px;
   background: transparent;
-  color: var(--text-secondary);
-  font-size: 9px;
+  color: var(--text-soft);
+  font-size: 12px;
   font-weight: 760;
   cursor: pointer;
 }
 .guide-language-control button.active { background: var(--accent-soft); color: var(--accent-strong); }
-.guide-stage .welcome-kicker { color: var(--accent-strong); font-size: 9px; font-weight: 820; letter-spacing: .15em; }
+.guide-stage .welcome-kicker { color: var(--accent-strong); font-size: 11px; font-weight: 820; letter-spacing: .14em; }
 .guide-stage h1 { max-width: 560px; margin: 15px 0 0; font-size: clamp(36px, 5vw, 54px); font-weight: 650; letter-spacing: -.055em; line-height: .98; }
-.guide-stage > p { max-width: 590px; min-height: 68px; margin: 20px 0 0; color: var(--text-secondary); font-size: 14px; line-height: 1.65; }
+.guide-stage > p { max-width: 590px; min-height: 68px; margin: 20px 0 0; color: var(--text-soft); font-size: 16px; line-height: 1.65; }
 .guide-portfolio-preview {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -935,12 +935,12 @@ tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 48%, transpar
   padding: 15px;
   border: 1px solid var(--line);
   border-radius: 19px;
-  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  background: color-mix(in srgb, var(--surface-solid) 88%, var(--bg));
   box-shadow: inset 0 1px 0 rgb(255 255 255 / .35);
 }
-.guide-portfolio-preview span { color: var(--text-tertiary); font-size: 9px; font-weight: 820; letter-spacing: .11em; }
+.guide-portfolio-preview span { color: var(--muted); font-size: 12px; font-weight: 820; letter-spacing: .09em; }
 .guide-portfolio-preview strong { margin-top: 12px; font-size: 22px; font-weight: 640; letter-spacing: -.04em; }
-.guide-portfolio-preview small { overflow: hidden; color: var(--text-tertiary); font-size: 9px; line-height: 1.4; text-overflow: ellipsis; }
+.guide-portfolio-preview small { overflow: hidden; color: var(--muted); font-size: 11px; line-height: 1.4; text-overflow: ellipsis; }
 .guide-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-top: 26px; }
 .guide-actions .secondary-button, .guide-actions .primary-button { min-height: 44px; }
 .guide-open-view { margin-left: auto; }
@@ -993,7 +993,7 @@ tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 48%, transpar
   .demo-guide { min-height: min(690px, calc(100svh - 16px)); max-height: calc(100svh - 16px); border-radius: 27px; }
   .guide-stage { justify-content: flex-start; padding: 30px 18px 20px; }
   .guide-stage h1 { font-size: 38px; }
-  .guide-stage > p { min-height: 0; font-size: 13px; }
+  .guide-stage > p { min-height: 0; font-size: 15px; }
   .guide-portfolio-preview { grid-template-columns: 1fr; margin-top: 20px; }
   .guide-portfolio-preview > div { grid-template-columns: 58px 90px minmax(0, 1fr); min-height: 58px; align-items: center; padding: 10px 12px; }
   .guide-portfolio-preview strong { margin-top: 0; font-size: 17px; }
