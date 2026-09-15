@@ -138,7 +138,7 @@ export function AlphaLab({
   const [costMethod, setCostMethod] = useState<CostMethod>("WEIGHTED_AVERAGE");
   const [notice, setNotice] = useState<Notice>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(isGuest);
   const [resettingDemo, setResettingDemo] = useState(false);
   const [guideStep, setGuideStep] = useState(0);
   const [language, setLanguage] = useState<Language>("en");
@@ -177,13 +177,6 @@ export function AlphaLab({
     else document.documentElement.dataset.theme = theme;
     window.localStorage.setItem("alpha-theme", theme);
   }, [theme]);
-
-  useEffect(() => {
-    if (isGuest && window.localStorage.getItem("alpha-beta-welcome-v3") !== "dismissed") {
-      const frame = window.requestAnimationFrame(() => setShowWelcome(true));
-      return () => window.cancelAnimationFrame(frame);
-    }
-  }, [isGuest]);
 
   useEffect(() => {
     if (!isOlderThan90Minutes(initialData.lastSuccessfulUpdateAt)) return;
@@ -266,7 +259,6 @@ export function AlphaLab({
   }
 
   function dismissWelcome(nextView: View = "portfolio") {
-    window.localStorage.setItem("alpha-beta-welcome-v3", "dismissed");
     setShowWelcome(false);
     selectView(nextView);
   }

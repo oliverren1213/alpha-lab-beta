@@ -354,6 +354,8 @@ test("public demo defaults to English and seeds only explicit simulated examples
     readFile(new URL("../app/api/theses/route.ts", import.meta.url), "utf8"),
   ]);
   assert.match(ui, /useState<Language>\("en"\)/);
+  assert.match(ui, /useState\(isGuest\)/);
+  assert.doesNotMatch(ui, /alpha-beta-welcome-v\d+/);
   assert.match(database, /DEMO_SEED_VERSION = "DEMO-V3"/);
   assert.match(database, /transaction\(nvdaId, "BUY", time\(80\), 60, 145/);
   assert.match(database, /transaction\(nvdaId, "BUY", time\(42\), 40, 158/);
