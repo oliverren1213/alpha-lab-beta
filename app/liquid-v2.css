@@ -111,6 +111,7 @@ body {
   filter: blur(18px);
   opacity: .48;
   animation: atmosphere-drift 18s ease-in-out infinite alternate;
+  will-change: transform;
 }
 
 .app-atmosphere span:nth-child(1) { top: -34%; left: -14%; background: radial-gradient(circle, rgb(39 137 255 / .3), transparent 66%); }
@@ -305,9 +306,55 @@ body {
 @keyframes refresh-spin { to { transform: rotate(360deg); } }
 
 .view-stage { animation: view-arrive .54s var(--spring) both; }
-@keyframes view-arrive { from { opacity: 0; transform: translateY(14px) scale(.992); filter: blur(5px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes view-arrive { from { opacity: 0; transform: translate3d(0, 14px, 0) scale(.992); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
 
 .view-stack { gap: 32px; padding-top: 18px; }
+
+.view-stack > .analysis-section,
+.view-stack > .analysis-disclosure,
+.view-stack > .ledger-tools,
+.view-stack > .screenshot-import {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 520px;
+}
+
+.screenshot-import {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(320px, .95fr);
+  gap: 24px;
+  align-items: center;
+  padding: clamp(24px, 3vw, 38px);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--line));
+  border-radius: 28px;
+  background: radial-gradient(circle at 92% 4%, color-mix(in srgb, var(--accent) 15%, transparent), transparent 35%), var(--glass-fill);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .4), var(--glass-shadow);
+}
+.screenshot-import-copy h2 { margin: 10px 0 0; font-size: clamp(27px, 3vw, 39px); letter-spacing: -.045em; }
+.screenshot-import-copy p { max-width: 620px; margin: 12px 0 0; color: var(--muted); font-size: 13px; line-height: 1.65; }
+.screenshot-upload { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: stretch; }
+.screenshot-upload .primary-button { min-height: 78px; padding-inline: 20px; }
+.screenshot-drop { position: relative; display: grid; min-height: 78px; grid-template-columns: 38px 1fr; grid-template-rows: auto auto; align-content: center; column-gap: 12px; padding: 12px 16px; border: 1px dashed color-mix(in srgb, var(--accent) 34%, var(--line)); border-radius: 17px; background: color-mix(in srgb, var(--surface-solid) 56%, transparent); cursor: pointer; transition: transform .2s var(--spring), border-color .2s ease, background .2s ease; }
+.screenshot-drop:hover { transform: translateY(-2px); border-color: var(--accent); background: var(--surface-solid); }
+.screenshot-drop > span { grid-row: 1 / 3; align-self: center; color: var(--accent-strong); font-size: 30px; }
+.screenshot-drop strong { align-self: end; font-size: 13px; }
+.screenshot-drop small { align-self: start; margin-top: 3px; color: var(--muted); font-size: 10px; }
+.screenshot-drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.recognition-results { grid-column: 1 / -1; display: grid; gap: 10px; padding-top: 4px; }
+.recognition-setup { grid-column: 1 / -1; margin: -10px 0 0; color: var(--warning); font-size: 11px; }
+.recognition-warning { margin: 0; color: var(--warning); font-size: 12px; }
+.recognition-card { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 18px; background: color-mix(in srgb, var(--surface-solid) 62%, transparent); }
+.recognition-card > div { display: grid; min-width: 0; grid-template-columns: auto 1fr; gap: 3px 10px; align-items: baseline; }
+.recognition-card span { padding: 3px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-strong); font-size: 10px; font-weight: 700; }
+.recognition-card strong { font-size: 16px; }
+.recognition-card small, .recognition-card em { grid-column: 1 / -1; color: var(--muted); font-size: 11px; font-style: normal; }
+.recognition-card em { color: var(--warning); }
+.recognition-card .secondary-button { flex: 0 0 auto; }
+
+.cash-note { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--line)); border-radius: 18px; background: color-mix(in srgb, var(--accent-soft) 52%, transparent); }
+.cash-note > span { display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; border-radius: 10px; background: var(--accent-soft); color: var(--accent-strong); }
+.cash-note > div { display: grid; gap: 3px; }
+.cash-note strong { font-size: 13px; }
+.cash-note small { color: var(--muted); font-size: 11px; line-height: 1.5; }
 
 /* Portfolio cockpit */
 .portfolio-hero {
@@ -342,6 +389,7 @@ body {
   filter: blur(.2px);
   opacity: .64;
   animation: orb-breathe 8s ease-in-out infinite alternate;
+  will-change: transform, opacity;
 }
 
 @keyframes orb-breathe { to { transform: translate3d(-18px, 22px, 0) scale(1.06); opacity: .82; } }
@@ -696,6 +744,11 @@ tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 48%, transpar
   .primary-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .metric { min-height: 104px; padding: 17px; border-radius: 19px; }
   .analysis-section, .editor-panel, .scenario-controls, .scenario-result, .data-status-hero { padding: 20px 16px; border-radius: 24px; }
+  .screenshot-import { grid-template-columns: 1fr; padding: 22px 16px; border-radius: 24px; }
+  .screenshot-upload { grid-template-columns: 1fr; }
+  .screenshot-upload .primary-button { min-height: 48px; }
+  .recognition-card { align-items: stretch; flex-direction: column; }
+  .recognition-card .secondary-button { width: 100%; }
   .transaction-form { grid-template-columns: 1fr; }
   .transaction-flow, .quick-type-row, .transaction-primary, .transaction-preview, .transaction-advanced, .reconcile-toggle, .transaction-submit-bar { grid-column: 1; }
   .transaction-flow { gap: 3px; padding: 4px; }
@@ -718,6 +771,25 @@ tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 48%, transpar
   .login-access-side { padding: 38px 24px 30px; }
   .login-language { top: 22px; right: 22px; }
   .access-heading h2 { font-size: 31px; }
+}
+
+@media (max-width: 700px), (pointer: coarse) {
+  .liquid-glass-web-approx,
+  .app-topbar,
+  .portfolio-hero,
+  .editor-panel,
+  .scenario-controls,
+  .scenario-result,
+  .data-status-hero,
+  .analysis-disclosure,
+  .table-shell,
+  .thesis-record,
+  .source-grid article,
+  .empty-state {
+    backdrop-filter: blur(18px) saturate(145%);
+    -webkit-backdrop-filter: blur(18px) saturate(145%);
+  }
+  .app-atmosphere span { animation: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

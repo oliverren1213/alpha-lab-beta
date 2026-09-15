@@ -5,6 +5,7 @@ import { installTranslations, translateText, type Language } from "../lib/i18n";
 import { calculatePortfolio, currencyRate, runScenario, type ScenarioShock } from "../lib/portfolio";
 import { normalizeTradeDate, transactionAmountPreview } from "../lib/transaction-form";
 import { transactionFingerprint } from "../lib/transaction-fingerprint";
+import { recognizeScreenshotLocally, type ResolvedScreenshotTrade } from "../lib/screenshot-import";
 import type {
   Asset,
   CostMethod,
@@ -511,10 +512,18 @@ function PortfolioView({
   }
   const positionCostUsd = summary.positions.reduce((total, position) => total + position.costBasisUsd, 0);
   const primaryMetrics = [
-    ["持仓市值", summary.marketValueUsd],
-    ["净投入", summary.netContributionsUsd],
-    ["账本持仓成本", positionCostUsd],
-    ["账本现金", summary.cashUsd],
+    { label: "持仓市值", value: summary.marketValueUsd, text: undefined },
+    { label: "净投入", value: summary.netContributionsUsd, text: undefined },
+    { label: "账本持仓成本", value: positionCostUsd, text: undefined },
+    {
+      label: "现金余额",
+      value: summary.cashMode === "UNTRACKED" ? null : summary.cashUsd,
+      text: summary.cashMode === "UNTRACKED"
+        ? "未追踪"
+        : summary.cashMode === "PARTIAL"
+          ? `${money(summary.cashUsd)} · 部分追踪`
+          : money(summary.cashUsd),
+    },
   ] as const;
   const pnlBreakdown = [
     ["已实现收益", summary.realizedPnlUsd],
@@ -542,14 +551,14 @@ function PortfolioView({
       : `${formatDate(priceDates[0])} – ${formatDate(priceDates.at(-1)!)}`;
   const healthIssues = [
     ...(summary.missingAssetIds.length ? [`${summary.missingAssetIds.length} 项持仓缺少价格或汇率`] : []),
-    ...(summary.cashUsd < -0.005 ? [`账本现金 ${money(summary.cashUsd)}，可能缺少入金或现金余额记录`] : []),
+    ...(summary.cashMode === "TRACKED" && summary.cashUsd < -0.005 ? [`现金余额 ${money(summary.cashUsd)}，可能缺少入金或转账记录`] : []),
     ...(pendingCount ? [`${pendingCount} 笔交易待核对`] : []),
   ];
   const healthTitle = summary.missingAssetIds.length
     ? "估值不完整"
     : pendingCount
       ? "账本有待核对项"
-      : "账本现金为负";
+      : "现金余额为负";
   const hasUsefulSector = summary.allocation.bySector.some((row) => row.label !== "Unclassified");
   const trendValues = data.history
     .slice(-24)
@@ -584,13 +593,20 @@ function PortfolioView({
       </section>
 
       <section className="metric-board primary-metrics" aria-label="组合关键指标">
-        {primaryMetrics.map(([label, value]) => (
-          <div className="metric" key={label} style={{ "--metric-index": primaryMetrics.findIndex(([item]) => item === label) } as React.CSSProperties}>
-            <span>{label}</span>
-            <strong className={label === "账本现金" ? toneClass(value) : "neutral-number"}>{money(value)}</strong>
+        {primaryMetrics.map((metric, index) => (
+          <div className="metric" key={metric.label} style={{ "--metric-index": index } as React.CSSProperties}>
+            <span>{metric.label}</span>
+            <strong className={metric.label === "现金余额" ? toneClass(metric.value) : "neutral-number"}>{metric.text ?? money(metric.value)}</strong>
           </div>
         ))}
       </section>
+
+      {summary.cashMode !== "TRACKED" ? (
+        <div className="cash-note">
+          <span aria-hidden="true">≈</span>
+          <div><strong>{summary.cashMode === "PARTIAL" ? "现金部分追踪" : "现金未追踪"}</strong><small>只记录成交时，Alpha Lab 不会凭空推算负现金；组合净值按可估值持仓计算。</small></div>
+        </div>
+      ) : null}
 
       {healthIssues.length ? (
         <div className={`health-bar ${summary.missingAssetIds.length ? "error" : "warning"}`}>
@@ -638,7 +654,7 @@ function PortfolioView({
       </details>
 
       <section className="analysis-section">
-        <SectionHeading title="集中度" body="按账户净值计算；负现金可能使持仓权重合计超过 100%。" />
+        <SectionHeading title="集中度" body="按当前可估值资产计算；现金只在账本存在明确转入、转出记录时计入。" />
         <div className="allocation-focus"><AllocationList title="按标的" rows={summary.allocation.byAsset.slice(0, 5)} money={money} /></div>
       </section>
 
@@ -667,6 +683,10 @@ function LedgerView({ data, reload, setNotice }: {
   const [typeFilter, setTypeFilter] = useState("ALL");
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [recognizing, setRecognizing] = useState(false);
+  const [recognitionProgress, setRecognitionProgress] = useState(0);
+  const [recognizedTrades, setRecognizedTrades] = useState<ResolvedScreenshotTrade[]>([]);
+  const [recognitionWarnings, setRecognitionWarnings] = useState<string[]>([]);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -848,6 +868,57 @@ function LedgerView({ data, reload, setNotice }: {
     }
   }
 
+  async function recognizeScreenshot(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setRecognizing(true);
+    setRecognitionProgress(0);
+    try {
+      const image = new FormData(event.currentTarget).get("image");
+      if (!(image instanceof File)) throw new Error("请选择一张交易记录截图");
+      const result = await recognizeScreenshotLocally(image, data.accounts, data.assets, setRecognitionProgress);
+      setRecognizedTrades(result.trades);
+      setRecognitionWarnings(result.documentWarnings);
+      setNotice({
+        tone: result.trades.length ? "success" : "info",
+        text: result.trades.length
+          ? `识别到 ${result.trades.length} 笔候选交易，请逐笔核对后保存`
+          : "没有识别到已成交记录；持仓快照和未成交订单不会被录入",
+      });
+    } catch (error) {
+      setNotice({ tone: "error", text: error instanceof Error ? error.message : "无法识别截图" });
+    } finally {
+      setRecognizing(false);
+      setRecognitionProgress(0);
+    }
+  }
+
+  function reviewRecognizedTrade(trade: ResolvedScreenshotTrade) {
+    const asset = trade.assetId ? assetById.get(trade.assetId) : null;
+    const tradeCurrency = trade.currency ?? asset?.currency ?? "USD";
+    setEditing(null);
+    setAdvancedOpen(Boolean(trade.fee || trade.tax || trade.reference || trade.warnings.length));
+    setDraft({
+      accountId: trade.accountId ?? "",
+      assetId: trade.assetId ?? "",
+      type: trade.type,
+      tradedAt: trade.tradedAt ?? "",
+      settlementDate: "",
+      quantity: trade.quantity == null ? "" : String(trade.quantity),
+      unitPrice: trade.unitPrice == null ? "" : String(trade.unitPrice),
+      currency: tradeCurrency,
+      fee: String(trade.fee ?? 0),
+      tax: String(trade.tax ?? 0),
+      fxToBase: tradeCurrency === "USD" ? "1" : "",
+      totalAmount: trade.totalAmount == null ? "" : String(trade.totalAmount),
+      source: trade.sourceText,
+      note: [trade.reference ? `参考号 ${trade.reference}` : "", ...trade.warnings].filter(Boolean).join(" · "),
+      reconciled: false,
+    });
+    setEditorOpen(true);
+    setStep(1);
+    requestAnimationFrame(() => document.getElementById("transaction-editor")?.scrollIntoView({ behavior: "smooth" }));
+  }
+
   async function restoreBackup(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formElement = event.currentTarget;
@@ -882,6 +953,43 @@ function LedgerView({ data, reload, setNotice }: {
           <button type="button" onClick={() => openEditor("CASH_IN")}>资金转入</button>
           <button className="primary-button" type="button" onClick={() => openEditor()}>其他交易</button>
         </div>
+      </section>
+
+      <section className="screenshot-import" aria-labelledby="screenshot-import-title">
+        <div className="screenshot-import-copy">
+          <span className="preview-eyebrow">SMART CAPTURE</span>
+          <h2 id="screenshot-import-title">上传成交截图，自动填表</h2>
+          <p>图片只在你的浏览器内识别，不上传、不保存、无需 API key。结果必须由你核对，重复成交仍会被拦截。</p>
+        </div>
+        <form className="screenshot-upload" onSubmit={recognizeScreenshot}>
+          <label className="screenshot-drop">
+            <span aria-hidden="true">⌁</span>
+            <strong>选择交易截图</strong>
+            <small>JPEG、PNG 或 WebP · 最大 8 MB</small>
+            <input name="image" type="file" accept="image/jpeg,image/png,image/webp" required />
+          </label>
+          <button className="primary-button" disabled={recognizing} type="submit">{recognizing ? `本地识别 ${Math.round(recognitionProgress * 100)}%` : "识别交易"}</button>
+        </form>
+        <p className="recognition-setup">首次使用会下载中英文字库，通常需要几秒；模糊字段会留给你确认，不会自动入账。</p>
+        {recognizedTrades.length || recognitionWarnings.length ? (
+          <div className="recognition-results">
+            {recognitionWarnings.length ? <p className="recognition-warning">{recognitionWarnings.join(" · ")}</p> : null}
+            {recognizedTrades.map((trade, index) => {
+              const asset = trade.assetId ? assetById.get(trade.assetId) : null;
+              const account = trade.accountId ? accountById.get(trade.accountId) : null;
+              return <article className="recognition-card" key={`${trade.reference ?? trade.symbol ?? "trade"}-${index}`}>
+                <div>
+                  <span>{transactionLabels[trade.type] ?? trade.type}</span>
+                  <strong>{asset?.symbol ?? trade.symbol ?? trade.assetName ?? "未匹配标的"}</strong>
+                  <small>{trade.tradedAt ?? "日期待确认"} · {trade.quantity ?? "数量待确认"} × {trade.unitPrice ?? "价格待确认"} {trade.currency ?? ""}</small>
+                  <small>{account?.name ?? "账户待确认"} · 识别把握 {Math.round(trade.confidence * 100)}%</small>
+                  {trade.warnings.length ? <em>{trade.warnings.join(" · ")}</em> : null}
+                </div>
+                <button className="secondary-button" onClick={() => reviewRecognizedTrade(trade)} type="button">核对并填入</button>
+              </article>;
+            })}
+          </div>
+        ) : null}
       </section>
 
       {editorOpen ? <section className="editor-panel transaction-editor" id="transaction-editor">

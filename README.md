@@ -28,6 +28,7 @@ Most retail portfolio dashboards show a number without showing its provenance. A
 - Scheduled Rome-time refresh windows and a 90-minute stale-on-open refresh guard
 - Responsive light/dark Apple-inspired interface
 - English/Chinese interface, guided three-step trade entry, resettable guest demo, and project case-study view
+- Free browser-local OCR for screenshot-assisted trade entry; images stay on-device and every candidate requires human review
 
 ## Privacy and data integrity
 

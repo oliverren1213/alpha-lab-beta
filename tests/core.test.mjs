@@ -21,6 +21,7 @@ const { createGuestToken, verifyGuestToken } = await vite.ssrLoadModule("/lib/gu
 const { installTranslations, translateText } = await vite.ssrLoadModule("/lib/i18n.ts");
 const { normalizeTradeDate, transactionAmountPreview } =
   await vite.ssrLoadModule("/lib/transaction-form.ts");
+const { parseOcrTrades } = await vite.ssrLoadModule("/lib/screenshot-import.ts");
 const { FinnhubQuoteProvider, previousTradingDate } =
   await vite.ssrLoadModule("/lib/providers.ts");
 
@@ -206,6 +207,46 @@ test("cash transfers change capital but not investment return", () => {
   assert.equal(value.netContributionsUsd, 1_000);
   assert.equal(value.totalValueUsd, 1_000);
   assert.equal(value.cumulativePnlUsd, 0);
+});
+
+test("trade-only ledgers do not invent a negative cash balance", () => {
+  const value = summary([tx("1", "BUY", { quantity: 2, unitPrice: 100 })], [
+    price(stock.id, "2026-01-20", 100), price(stock.id, "2026-01-21", 110),
+  ]);
+  assert.equal(value.cashMode, "UNTRACKED");
+  assert.equal(value.cashUsd, 0);
+  assert.equal(value.netContributionsUsd, 200);
+  assert.equal(value.totalValueUsd, 220);
+  assert.equal(value.cumulativePnlUsd, 20);
+});
+
+test("cash tracking is scoped per account when ledgers are mixed", () => {
+  const secondAccount = { ...account, id: "account-second" };
+  const secondStock = { ...stock, id: "asset-second", symbol: "TWO" };
+  const value = summary([
+    tx("1", "CASH_IN", { totalAmount: 1_000 }),
+    tx("2", "BUY", { quantity: 2, unitPrice: 100 }),
+    tx("3", "BUY", { accountId: secondAccount.id, assetId: secondStock.id, quantity: 1, unitPrice: 50 }),
+  ], [
+    price(stock.id, "2026-01-20", 100), price(stock.id, "2026-01-21", 110),
+    price(secondStock.id, "2026-01-20", 50), price(secondStock.id, "2026-01-21", 55),
+  ], { accounts: [account, secondAccount], assets: [stock, secondStock] });
+  assert.equal(value.cashMode, "PARTIAL");
+  assert.equal(value.cashUsd, 800);
+  assert.equal(value.netContributionsUsd, 1_050);
+  assert.equal(value.totalValueUsd, 1_075);
+});
+
+test("local OCR parser extracts labeled trade fields and flags uncertainty", () => {
+  const parsed = parseOcrTrades(`HSBC HK\n已买入 Fixture Stock (STK)\n成交日期 2026-09-15\n成交数量 1\n成交价格 USD 334\n手续费 0\n订单号 ORDER-334`, [account], [stock]);
+  assert.equal(parsed.trades.length, 1);
+  assert.equal(parsed.trades[0].assetId, stock.id);
+  assert.equal(parsed.trades[0].accountId, account.id);
+  assert.equal(parsed.trades[0].unitPrice, 334);
+  assert.equal(parsed.trades[0].sourceText, "HSBC HK · 本地 OCR");
+  const uncertain = parseOcrTrades("BUY Fixture Stock STK\\nQuantity 2", [account], [stock]);
+  assert.equal(uncertain.trades[0].unitPrice, null);
+  assert.ok(uncertain.trades[0].warnings.includes("成交价未可靠识别"));
 });
 
 test("missing price never silently becomes zero", () => {
