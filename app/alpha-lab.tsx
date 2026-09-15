@@ -54,6 +54,15 @@ const viewDescriptions: Record<View, string> = {
   about: "了解产品边界、核心架构与公开演示原则。",
 };
 
+const guideSteps: Array<{ view: View; eyebrow: string; title: string; body: string; short: string }> = [
+  { view: "portfolio", eyebrow: "LANGUAGE", title: "先选语言", body: "Public Beta 默认以英文打开。右上角的“中文 / EN”按钮可以随时切换，页面内容会立即同步。", short: "English / 中文" },
+  { view: "portfolio", eyebrow: "01 · PORTFOLIO", title: "先读懂组合", body: "从账户净值、今日影响和累计损益开始，再向下核对 NVDA 100 股、GOOGL 25 股与 $1,000 黄金仓位的模拟成本口径。", short: "成本、收益与仓位" },
+  { view: "ledger", eyebrow: "02 · LEDGER", title: "再追溯每笔交易", body: "账本是所有计算的源头。试着新增或编辑一笔模拟交易；重复成交会被自动识别，不会悄悄写入两次。", short: "录入、编辑与去重" },
+  { view: "thesis", eyebrow: "03 · THESIS", title: "检查当初为什么买", body: "阅读预置的 NVDA 与 GOOGL 投资逻辑，再追加 revision。新判断只会追加，不会覆盖原始理由。", short: "原始理由与 revision" },
+  { view: "scenario", eyebrow: "04 · SCENARIO", title: "最后做压力测试", body: "调整 QQQ、半导体或单一标的冲击，观察组合影响。情景结果不会改动正式账本。", short: "冲击而不改账本" },
+  { view: "data", eyebrow: "05 · DATA", title: "知道每个数字从哪来", body: "演示价格是固定模拟值，不是实时行情。正式数据模式会保留价格日期、来源、报价时间与延迟状态。", short: "来源、时间与延迟" },
+];
+
 const currencyLabels: Record<Currency, string> = {
   USD: "USD",
   HKD: "HKD",
@@ -131,10 +140,8 @@ export function AlphaLab({
   const [refreshing, setRefreshing] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [resettingDemo, setResettingDemo] = useState(false);
-  const [language, setLanguage] = useState<Language>(() => {
-    if (typeof window === "undefined") return "en";
-    return window.localStorage.getItem("alpha-language") === "zh" ? "zh" : "en";
-  });
+  const [guideStep, setGuideStep] = useState(0);
+  const [language, setLanguage] = useState<Language>("en");
   const [theme, setTheme] = useState<"system" | "light" | "dark">(() => {
     if (typeof window === "undefined") return "system";
     const saved = window.localStorage.getItem("alpha-theme");
@@ -172,7 +179,7 @@ export function AlphaLab({
   }, [theme]);
 
   useEffect(() => {
-    if (isGuest && window.localStorage.getItem("alpha-beta-welcome") !== "dismissed") {
+    if (isGuest && window.localStorage.getItem("alpha-beta-welcome-v3") !== "dismissed") {
       const frame = window.requestAnimationFrame(() => setShowWelcome(true));
       return () => window.cancelAnimationFrame(frame);
     }
@@ -214,6 +221,11 @@ export function AlphaLab({
   }
 
   async function refreshData() {
+    if (isGuest) {
+      setNotice({ tone: "info", text: "演示空间使用固定且明确标注的模拟价格，不会伪装成实时行情。" });
+      selectView("data");
+      return;
+    }
     setRefreshing(true);
     setNotice({ tone: "info", text: "正在向已配置的数据源请求最新数据" });
     try {
@@ -254,7 +266,7 @@ export function AlphaLab({
   }
 
   function dismissWelcome(nextView: View = "portfolio") {
-    window.localStorage.setItem("alpha-beta-welcome", "dismissed");
+    window.localStorage.setItem("alpha-beta-welcome-v3", "dismissed");
     setShowWelcome(false);
     selectView(nextView);
   }
@@ -293,7 +305,7 @@ export function AlphaLab({
           <div className="topbar-actions">
             <div className="topbar-freshness"><DataFreshness data={data} /></div>
             <span className="beta-badge" title={displayName}>{isGuest ? t("DEMO SPACE") : displayName}</span>
-            <button className="glass-icon-button language-toggle" onClick={() => setLanguage(language === "zh" ? "en" : "zh")} type="button" aria-label={language === "zh" ? "Switch to English" : "切换至中文"}>{language === "zh" ? "EN" : "中"}</button>
+            <button className="glass-icon-button language-toggle" onClick={() => setLanguage(language === "zh" ? "en" : "zh")} type="button" aria-label={language === "zh" ? "Switch to English" : "切换至中文"}>{language === "zh" ? "EN" : "中文"}</button>
             <button className="glass-icon-button theme-toggle" onClick={() => setTheme(nextTheme)} type="button" aria-label={t("切换主题")} title={t("切换主题")}><ThemeIcon theme={theme} /></button>
             {!isGuest ? <button className="glass-icon-button logout-button" onClick={logout} type="button" aria-label={t("退出登录")} title={t("退出登录")}><span aria-hidden="true">↗</span></button> : null}
           </div>
@@ -321,28 +333,64 @@ export function AlphaLab({
           <div className="demo-ribbon" role="status">
             <div><strong>独立演示空间</strong><span>示例数据与你的操作只存在于当前访客空间，不是任何人的真实持仓。</span></div>
             <div className="demo-ribbon-actions">
-              <button className="text-button" type="button" onClick={() => setShowWelcome(true)}>使用指南</button>
+              <button className="text-button" type="button" onClick={() => { setGuideStep(0); setShowWelcome(true); }}>使用指南</button>
               <button className="text-button" type="button" onClick={() => void resetDemo()} disabled={resettingDemo}>{resettingDemo ? "重置中" : "重置演示"}</button>
             </div>
           </div>
         ) : null}
         {showWelcome ? (
-          <section className="welcome-card" aria-labelledby="welcome-title">
-            <div className="welcome-copy">
-              <span className="welcome-kicker">PUBLIC BETA · ISOLATED DEMO</span>
-              <h1 id="welcome-title">从一笔交易，到一套可核对的投资决策。</h1>
-              <p>体验真实成本、收益归因、价格审计与投资逻辑。所有预置记录都明确标注为演示数据。</p>
-            </div>
-            <ol className="welcome-steps">
-              <li><span>01</span><div><strong>查看组合</strong><small>先看成本、收益和价格时间。</small></div></li>
-              <li><span>02</span><div><strong>试录交易</strong><small>重复成交会自动拦截。</small></div></li>
-              <li><span>03</span><div><strong>运行情景</strong><small>改变假设，不改正式账本。</small></div></li>
-            </ol>
-            <div className="welcome-actions">
-              <button className="primary-button" type="button" onClick={() => dismissWelcome("portfolio")}>开始体验</button>
-              <button className="secondary-button" type="button" onClick={() => dismissWelcome("ledger")}>直接试录交易</button>
-            </div>
-          </section>
+          <div className="demo-guide-overlay">
+            <section className="demo-guide" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
+              <button className="guide-close" type="button" onClick={() => dismissWelcome("portfolio")} aria-label={t("关闭指南")}>×</button>
+              <aside className="guide-rail">
+                <div className="guide-brand"><span>α</span><div><strong>Alpha Lab</strong><small>GUIDED PUBLIC DEMO</small></div></div>
+                <ol aria-label={t("指南进度")}>
+                  {guideSteps.map((step, index) => (
+                    <li key={step.eyebrow}>
+                      <button className={index === guideStep ? "active" : ""} onClick={() => setGuideStep(index)} type="button" aria-current={index === guideStep ? "step" : undefined}>
+                        <span>{String(index + 1).padStart(2, "0")}</span><strong>{t(step.title)}</strong>
+                      </button>
+                    </li>
+                  ))}
+                </ol>
+                <small>{t("所有持仓、价格与投资逻辑均为模拟示例，不构成投资建议。")}</small>
+              </aside>
+              <div className="guide-stage">
+                <div className="guide-language-control" aria-label={t("界面语言")}>
+                  <span>{t("界面语言")}</span>
+                  <button className={language === "en" ? "active" : ""} type="button" onClick={() => setLanguage("en")} aria-pressed={language === "en"}>English</button>
+                  <button className={language === "zh" ? "active" : ""} type="button" onClick={() => setLanguage("zh")} aria-pressed={language === "zh"}>中文</button>
+                </div>
+                <span className="welcome-kicker">{guideSteps[guideStep].eyebrow}</span>
+                <h1 id="welcome-title">{t(guideSteps[guideStep].title)}</h1>
+                <p>{t(guideSteps[guideStep].body)}</p>
+                <div className="guide-portfolio-preview" aria-label={t("模拟组合预览")}>
+                  <div><span>NVDA</span><strong>100 {t("股")}</strong><small>{t("两次买入，展示加权成本")}</small></div>
+                  <div><span>GOOGL</span><strong>25 {t("股")}</strong><small>{t("长期逻辑示例")}</small></div>
+                  <div><span>GLD</span><strong>$1,000</strong><small>{t("黄金初始投入")}</small></div>
+                </div>
+                <div className="guide-actions">
+                  <button className="secondary-button" type="button" disabled={guideStep === 0} onClick={() => setGuideStep((step) => Math.max(0, step - 1))}>{t("上一步")}</button>
+                  {guideStep < guideSteps.length - 1 ? (
+                    <button className="primary-button" type="button" onClick={() => setGuideStep((step) => Math.min(guideSteps.length - 1, step + 1))}>{t("下一步")}</button>
+                  ) : (
+                    <button className="primary-button" type="button" onClick={() => dismissWelcome("portfolio")}>{t("进入模拟组合")}</button>
+                  )}
+                  <button className="text-button guide-open-view" type="button" onClick={() => dismissWelcome(guideSteps[guideStep].view)}>{t("打开这一页")} ↗</button>
+                </div>
+                <div className="guide-progress" aria-hidden="true">{guideSteps.map((step, index) => <i className={index === guideStep ? "active" : ""} key={step.eyebrow} />)}</div>
+              </div>
+            </section>
+          </div>
+        ) : null}
+        {isGuest && !showWelcome ? (
+          <nav className="demo-quick-actions" aria-label={t("演示快捷指南")}>
+            {guideSteps.slice(1, 5).map((step, index) => (
+              <button type="button" key={step.eyebrow} onClick={() => selectView(step.view)}>
+                <span>0{index + 1}</span><div><strong>{t(step.title)}</strong><small>{t(step.short)}</small></div><i aria-hidden="true">↗</i>
+              </button>
+            ))}
+          </nav>
         ) : null}
         <header className="workspace-header">
           <div className="workspace-title">
@@ -361,7 +409,7 @@ export function AlphaLab({
                 </select>
               </label>
               <button className="primary-button refresh-button" onClick={refreshData} disabled={refreshing} type="button">
-                <span className="refresh-symbol" aria-hidden="true">↻</span>{refreshing ? t("更新中") : t("刷新数据")}
+                <span className="refresh-symbol" aria-hidden="true">{isGuest ? "i" : "↻"}</span>{isGuest ? t("数据说明") : refreshing ? t("更新中") : t("刷新数据")}
               </button>
             </> : null}
           </div>
@@ -1234,7 +1282,7 @@ function DataView({ data, summary, reload, setNotice, refreshData, refreshing }:
     <div className="view-stack">
       <section className="data-status-hero">
         <div><span>最近成功更新</span><strong>{data.lastSuccessfulUpdateAt ? formatDateTime(data.lastSuccessfulUpdateAt) : "尚未成功执行"}</strong><small>{data.updateStatus ? `最近运行 ${data.updateStatus.status}，${data.updateStatus.successCount} 成功，${data.updateStatus.failureCount} 失败` : "暂无更新记录"}</small></div>
-        <button className="primary-button" onClick={refreshData} disabled={refreshing} type="button">{refreshing ? "更新中" : "立即刷新"}</button>
+        <button className="primary-button" onClick={refreshData} disabled={refreshing} type="button">{data.demoMode ? "了解模拟数据" : refreshing ? "更新中" : "立即刷新"}</button>
       </section>
       <section className="data-health-grid" aria-label="数据健康概览">
         <div><span>持仓定价</span><strong>{pricedHoldings}/{totalHoldings}</strong><small>有可审计价格的当前持仓</small></div>
@@ -1292,6 +1340,9 @@ function AboutView({ language }: { language: Language }) {
 }
 
 function DataFreshness({ data }: { data: LabData }) {
+  if (data.demoMode) {
+    return <div className="freshness demo"><strong>模拟快照</strong><small>固定情景数据 · 非实时行情</small></div>;
+  }
   const stale = isOlderThan90Minutes(data.lastSuccessfulUpdateAt);
   const failed = data.updateStatus?.status === "FAILED" || data.updateStatus?.status === "PARTIAL";
   return <div className={`freshness ${stale || failed ? "attention" : "current"}`}><strong>{!data.lastSuccessfulUpdateAt ? "未更新" : failed ? "部分更新" : stale ? "数据过期" : "数据已更新"}</strong><small>{data.lastSuccessfulUpdateAt ? formatDateTime(data.lastSuccessfulUpdateAt) : "等待首次真实写入"}</small></div>;

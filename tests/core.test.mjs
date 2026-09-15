@@ -343,6 +343,24 @@ test("the bilingual UI ships with an installable English translator", () => {
   assert.equal(translateText("An investment workspace built for evidence, not excitement.", "zh"), "一个为证据而生，而不是为情绪而生的投资工作台。");
   assert.equal(translateText("Record a trade", "zh"), "直接试录交易");
   assert.equal(translateText("Portfolio overview", "zh"), "组合总览");
+  assert.equal(translateText("AI infrastructure demand can compound while the software ecosystem reinforces switching costs.", "zh"), "AI 基础设施需求可能持续复合增长，而软件生态进一步强化转换成本。");
+  assert.equal(translateText("Guided demo portfolio", "zh"), "引导式演示组合");
+});
+
+test("public demo defaults to English and seeds only explicit simulated examples", async () => {
+  const [ui, database, thesisRoute] = await Promise.all([
+    readFile(new URL("../app/alpha-lab.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../lib/database.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/theses/route.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(ui, /useState<Language>\("en"\)/);
+  assert.match(database, /DEMO_SEED_VERSION = "DEMO-V3"/);
+  assert.match(database, /transaction\(nvdaId, "BUY", time\(80\), 60, 145/);
+  assert.match(database, /transaction\(nvdaId, "BUY", time\(42\), 40, 158/);
+  assert.match(database, /transaction\(goldId, "BUY", time\(30\), 4, 250/);
+  assert.match(database, /Alpha Lab simulated demo · not live/);
+  assert.match(database, /data_quality,is_delayed,price[\s\S]*session, "DEMO", value/);
+  assert.match(thesisRoute, /user\.isGuest/);
 });
 
 test("transaction form keeps broker dates stable and previews cash impact", () => {
@@ -365,7 +383,7 @@ test("transaction form keeps broker dates stable and previews cash impact", () =
   }), null);
 });
 
-test("database schema enforces per-user session uniqueness and contains no active demo seed", async () => {
+test("database schema enforces per-user session uniqueness and avoids legacy demo fixtures", async () => {
   const [schema, database] = await Promise.all([
     readFile(new URL("../db/schema.ts", import.meta.url), "utf8"),
     readFile(new URL("../lib/database.ts", import.meta.url), "utf8"),

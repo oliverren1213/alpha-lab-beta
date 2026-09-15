@@ -324,60 +324,151 @@ export async function loadLabData(ownerId: string): Promise<LabData> {
   };
 }
 
+const DEMO_SEED_VERSION = "DEMO-V3";
+
 export async function ensureGuestDemoData(ownerId: string) {
   if (!ownerId.startsWith("guest_")) return;
   await ensureDatabase();
   const database = getDatabase();
-  const existing = await database.prepare("SELECT id FROM accounts WHERE owner_id=? LIMIT 1")
-    .bind(ownerId).first<{ id: string }>();
-  if (existing) {
+  const existing = await database.prepare(
+    "SELECT id,masked_account FROM accounts WHERE owner_id=? LIMIT 1",
+  ).bind(ownerId).first<{ id: string; masked_account: string | null }>();
+  if (existing?.masked_account === DEMO_SEED_VERSION) {
     await ensureGuestDemoHistory(database, ownerId);
+    return;
+  }
+  if (existing) {
+    await resetGuestDemoData(ownerId);
     return;
   }
 
   const now = new Date();
-  const today = now.toISOString().slice(0, 10);
-  const prior = new Date(now.getTime() - 86_400_000).toISOString().slice(0, 10);
-  const bought = new Date(now.getTime() - 30 * 86_400_000).toISOString();
+  const date = (daysAgo: number) =>
+    new Date(now.getTime() - daysAgo * 86_400_000).toISOString().slice(0, 10);
+  const time = (daysAgo: number) => `${date(daysAgo)}T16:00:00.000Z`;
+  const today = date(0);
+  const prior = date(1);
   const createdAt = now.toISOString();
   const accountId = id("account");
-  const equityId = "asset-demo-equity";
-  const techId = "asset-demo-tech";
+  const nvdaId = "asset-demo-nvda";
+  const googlId = "asset-demo-googl";
+  const goldId = "asset-demo-gld";
+  const nvdaThesisId = id("thesis");
+  const googlThesisId = id("thesis");
+  const demoNote = "SIMULATED DEMO · not a real holding or market quote";
+  const transaction = (
+    assetId: string | null,
+    type: TransactionType,
+    tradedAt: string,
+    quantity: number,
+    unitPrice: number | null,
+    totalAmount: number | null,
+    fee = 0,
+  ) => database.prepare(
+    `INSERT INTO transactions
+     (id,owner_id,account_id,asset_id,type,traded_at,settlement_date,quantity,unit_price,currency,fee,tax,fx_to_base,total_amount,source,import_batch_id,note,reconciled,is_demo,created_at,updated_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+  ).bind(
+    id("tx"), ownerId, accountId, assetId, type, tradedAt, null, quantity, unitPrice,
+    "USD", fee, 0, 1, totalAmount, "Alpha Lab simulated demo", null, demoNote, 1, 1,
+    createdAt, createdAt,
+  );
+  const price = (
+    assetId: string,
+    priceDate: string,
+    session: "MORNING" | "AFTERNOON",
+    value: number,
+  ) => database.prepare(
+    `INSERT INTO price_snapshots
+     (id,owner_id,asset_id,price_date,fetched_at,provider,quoted_at,session,data_quality,is_delayed,price,nav,currency,status,is_demo)
+     VALUES (?,?,?,?,?,?,?,?,?,0,?,NULL,'USD','FRESH',1)`,
+  ).bind(
+    id("price"), ownerId, assetId, priceDate, createdAt,
+    "Alpha Lab simulated demo · not live", `${priceDate}T16:00:00.000Z`,
+    session, "DEMO", value,
+  );
+  const revision = (
+    thesisId: string,
+    revisedAt: string,
+    buyReason: string,
+    mispricing: string,
+    catalysts: string,
+    risks: string,
+    invalidation: string,
+    status = "UNCHANGED",
+    note = "Illustrative thesis · not investment advice",
+  ) => database.prepare(
+    `INSERT INTO thesis_revisions
+     (id,thesis_id,revised_at,buy_reason,mispricing,catalysts,risks,invalidation,sources,status,note)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+  ).bind(
+    id("revision"), thesisId, revisedAt, buyReason, mispricing, catalysts, risks,
+    invalidation, "Illustrative public information · demo only", status, note,
+  );
+
   await database.batch([
     database.prepare(
       "INSERT OR IGNORE INTO assets (id,symbol,name,asset_type,currency,sector,provider_symbol,is_leveraged,leverage_target,is_demo,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-    ).bind(equityId, "DEMO-EQ", "全球股票组合（演示）", "ETF", "USD", "Diversified", null, 0, null, 1, createdAt),
+    ).bind(nvdaId, "NVDA", "NVIDIA · simulated holding", "STOCK", "USD", "Semiconductors", null, 0, null, 1, createdAt),
     database.prepare(
       "INSERT OR IGNORE INTO assets (id,symbol,name,asset_type,currency,sector,provider_symbol,is_leveraged,leverage_target,is_demo,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-    ).bind(techId, "DEMO-TECH", "科技成长组合（演示）", "STOCK", "USD", "Technology", null, 0, null, 1, createdAt),
+    ).bind(googlId, "GOOGL", "Alphabet Class A · simulated holding", "STOCK", "USD", "Technology", null, 0, null, 1, createdAt),
+    database.prepare(
+      "INSERT OR IGNORE INTO assets (id,symbol,name,asset_type,currency,sector,provider_symbol,is_leveraged,leverage_target,is_demo,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+    ).bind(goldId, "GLD", "SPDR Gold Shares · simulated holding", "ETF", "USD", "Gold", null, 0, null, 1, createdAt),
     database.prepare(
       "INSERT INTO accounts (id,owner_id,name,institution,base_currency,masked_account,is_demo,created_at) VALUES (?,?,?,?,?,?,?,?)",
-    ).bind(accountId, ownerId, "访客演示账户", "Alpha Lab Sandbox", "USD", "DEMO", 1, createdAt),
+    ).bind(accountId, ownerId, "Guided demo portfolio", "Alpha Lab Sandbox", "USD", DEMO_SEED_VERSION, 1, createdAt),
+    transaction(null, "CASH_IN", time(100), 0, null, 30_000),
+    transaction(nvdaId, "BUY", time(80), 60, 145, null, 1.5),
+    transaction(nvdaId, "BUY", time(42), 40, 158, null, 1),
+    transaction(googlId, "BUY", time(60), 25, 220, null, 1),
+    transaction(goldId, "BUY", time(30), 4, 250, null, 0),
+    price(nvdaId, prior, "MORNING", 176),
+    price(nvdaId, today, "AFTERNOON", 181),
+    price(googlId, prior, "MORNING", 232),
+    price(googlId, today, "AFTERNOON", 236),
+    price(goldId, prior, "MORNING", 260),
+    price(goldId, today, "AFTERNOON", 263),
     database.prepare(
-      `INSERT INTO transactions
-       (id,owner_id,account_id,asset_id,type,traded_at,settlement_date,quantity,unit_price,currency,fee,tax,fx_to_base,total_amount,source,import_batch_id,note,reconciled,is_demo,created_at,updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    ).bind(id("tx"), ownerId, accountId, null, "CASH_IN", bought, null, 0, null, "USD", 0, 0, 1, 10_000, "Demo fixture", null, "明确标注的访客演示数据", 1, 1, createdAt, createdAt),
+      `INSERT INTO theses
+       (id,owner_id,asset_id,decision_type,opened_at,horizon,max_loss,planned_weight,confidence,status,created_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+    ).bind(nvdaThesisId, ownerId, nvdaId, "INVESTMENT", date(80), "3–5 years", 0.2, 0.5, 4, "UNCHANGED", createdAt),
+    revision(
+      nvdaThesisId,
+      time(80),
+      "AI infrastructure demand can compound while the software ecosystem reinforces switching costs.",
+      "The thesis assumes durable platform economics matter more than one quarter of headline growth.",
+      "New architecture adoption; data-center demand; sustained developer ecosystem.",
+      "Customer concentration; supply constraints; competition; valuation compression.",
+      "Two consecutive periods of weakening data-center demand or a structural loss of platform relevance.",
+    ),
+    revision(
+      nvdaThesisId,
+      time(14),
+      "The long-term thesis is intact, but position sizing must reflect semiconductor cyclicality.",
+      "Operating leverage remains meaningful only if demand converts into cash flow.",
+      "Execution against product roadmap and broadening inference demand.",
+      "Higher volatility and a sharper-than-expected spending slowdown.",
+      "Reduce conviction if roadmap execution slips while customer capex also weakens.",
+      "WEAKENED",
+      "Example revision: update the evidence without rewriting the original thesis.",
+    ),
     database.prepare(
-      `INSERT INTO transactions
-       (id,owner_id,account_id,asset_id,type,traded_at,settlement_date,quantity,unit_price,currency,fee,tax,fx_to_base,total_amount,source,import_batch_id,note,reconciled,is_demo,created_at,updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    ).bind(id("tx"), ownerId, accountId, equityId, "BUY", bought, null, 12, 220, "USD", 2, 0, 1, null, "Demo fixture", null, "明确标注的访客演示数据", 1, 1, createdAt, createdAt),
-    database.prepare(
-      `INSERT INTO transactions
-       (id,owner_id,account_id,asset_id,type,traded_at,settlement_date,quantity,unit_price,currency,fee,tax,fx_to_base,total_amount,source,import_batch_id,note,reconciled,is_demo,created_at,updated_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    ).bind(id("tx"), ownerId, accountId, techId, "BUY", bought, null, 8, 310, "USD", 2, 0, 1, null, "Demo fixture", null, "明确标注的访客演示数据", 1, 1, createdAt, createdAt),
-    ...[
-      [equityId, prior, "MORNING", 228],
-      [equityId, today, "AFTERNOON", 232],
-      [techId, prior, "MORNING", 302],
-      [techId, today, "AFTERNOON", 298],
-    ].map(([assetId, date, session, price]) => database.prepare(
-      `INSERT INTO price_snapshots
-       (id,owner_id,asset_id,price_date,fetched_at,provider,quoted_at,session,data_quality,is_delayed,price,nav,currency,status,is_demo)
-       VALUES (?,?,?,?,?,?,NULL,?,'DEMO',0,?,NULL,'USD','FRESH',1)`,
-    ).bind(id("price"), ownerId, assetId, date, createdAt, "Clearly labeled demo fixture", session, price)),
+      `INSERT INTO theses
+       (id,owner_id,asset_id,decision_type,opened_at,horizon,max_loss,planned_weight,confidence,status,created_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+    ).bind(googlThesisId, ownerId, googlId, "INVESTMENT", date(60), "3–5 years", 0.18, 0.2, 4, "UNCHANGED", createdAt),
+    revision(
+      googlThesisId,
+      time(60),
+      "Search cash generation can fund cloud and AI investment while the business remains globally diversified.",
+      "The demo thesis assumes the market underestimates the durability of the core cash engine.",
+      "Cloud margin expansion; AI product monetization; disciplined capital allocation.",
+      "Search disruption; regulation; rising infrastructure costs; slower cloud execution.",
+      "Reassess if core search economics deteriorate without offsetting cloud cash flow.",
+    ),
   ]);
   await ensureGuestDemoHistory(database, ownerId);
 }
@@ -387,15 +478,15 @@ async function ensureGuestDemoHistory(database: D1Database, ownerId: string) {
     .bind(ownerId).first<{ id: string }>();
   if (existing) return;
   const now = new Date();
-  const values = [9_970, 10_015, 9_955, 10_040, 10_005, 10_044];
+  const values = [30_420, 30_180, 30_760, 31_040, 30_690, 31_380, 31_920, 31_610, 32_440, 33_020, 33_680, 33_528.5];
   await database.batch(values.map((totalValue, index) => {
     const date = new Date(now.getTime() - (values.length - 1 - index) * 86_400_000).toISOString().slice(0, 10);
     return database.prepare(
       `INSERT OR IGNORE INTO portfolio_snapshots
        (id,owner_id,snapshot_date,base_currency,total_value,net_contributions,realized_pnl,
         unrealized_pnl,dividend_income,fee_and_tax,fx_pnl,status,session,created_at,is_demo)
-       VALUES (?,?,?,?,?,?,0,?,0,4,0,'DEMO','AFTERNOON',?,1)`,
-    ).bind(id("portfolio"), ownerId, date, "USD", totalValue, 10_000, totalValue - 10_000, now.toISOString());
+       VALUES (?,?,?,?,?,?,0,?,0,3.5,0,'DEMO','AFTERNOON',?,1)`,
+    ).bind(id("portfolio"), ownerId, date, "USD", totalValue, 30_000, totalValue - 30_000, now.toISOString());
   }));
 }
 

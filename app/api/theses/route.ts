@@ -29,9 +29,9 @@ export async function POST(request: Request) {
     await ensureDatabase();
     const database = getDatabase();
     const asset = await database.prepare(
-      `SELECT a.id FROM assets a WHERE a.id=? AND a.is_demo=0
+      `SELECT a.id FROM assets a WHERE a.id=? AND (a.is_demo=0 OR ?=1)
        AND EXISTS (SELECT 1 FROM transactions t WHERE t.asset_id=a.id AND t.owner_id=?)`,
-    ).bind(assetId, user.id).first<{ id: string }>();
+    ).bind(assetId, user.isGuest ? 1 : 0, user.id).first<{ id: string }>();
     if (!asset) throw new Error("找不到已确认的资产");
     const thesisId = id("thesis");
     const now = new Date().toISOString();

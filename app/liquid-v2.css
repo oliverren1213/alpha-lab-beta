@@ -770,4 +770,243 @@ tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 48%, transpar
   .beta-badge { display: none; }
 }
 
+/* A compact, native-feeling setup assistant for the public sandbox. */
+.language-toggle {
+  width: auto;
+  min-width: 62px;
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 780;
+  letter-spacing: .04em;
+}
+.demo-guide-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(8 13 22 / .38);
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  animation: guide-backdrop-in .32s ease-out both;
+}
+.demo-guide {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(220px, .72fr) minmax(0, 1.7fr);
+  width: min(940px, 100%);
+  min-height: 560px;
+  max-height: min(760px, calc(100svh - 48px));
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / .42);
+  border-radius: 34px;
+  background: color-mix(in srgb, var(--surface-solid) 78%, transparent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .56), 0 44px 120px rgb(10 22 45 / .34);
+  backdrop-filter: blur(42px) saturate(165%);
+  -webkit-backdrop-filter: blur(42px) saturate(165%);
+  animation: guide-card-in .52s var(--spring) both;
+}
+.demo-guide::before {
+  position: absolute;
+  top: -180px;
+  right: -110px;
+  width: 430px;
+  height: 430px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(30 126 255 / .2), transparent 68%);
+  content: "";
+  pointer-events: none;
+}
+.guide-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 4;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--surface-solid) 70%, transparent);
+  color: var(--text-secondary);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform .2s var(--spring), background .2s ease;
+}
+.guide-close:hover { transform: scale(1.06); background: var(--surface-solid); }
+.guide-rail {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 34px 24px 28px;
+  border-right: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 56%, transparent);
+}
+.guide-brand { display: flex; align-items: center; gap: 12px; }
+.guide-brand > span {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 13px;
+  background: linear-gradient(145deg, #298dff, #0661d7);
+  color: white;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .34), 0 10px 24px rgb(18 105 220 / .24);
+  font-size: 25px;
+}
+.guide-brand div { display: grid; gap: 2px; }
+.guide-brand strong { font-size: 14px; letter-spacing: -.02em; }
+.guide-brand small { color: var(--text-tertiary); font-size: 8px; font-weight: 800; letter-spacing: .13em; }
+.guide-rail ol { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.guide-rail li button {
+  display: grid;
+  grid-template-columns: 29px minmax(0, 1fr);
+  width: 100%;
+  min-height: 43px;
+  align-items: center;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 13px;
+  background: transparent;
+  color: var(--text-secondary);
+  text-align: left;
+  cursor: pointer;
+  transition: color .2s ease, background .2s ease, transform .2s var(--spring);
+}
+.guide-rail li button:hover { background: var(--surface-muted); transform: translateX(2px); }
+.guide-rail li button.active { background: var(--accent-soft); color: var(--accent-strong); }
+.guide-rail li button > span { font-size: 9px; font-weight: 760; font-variant-numeric: tabular-nums; opacity: .65; }
+.guide-rail li button strong { overflow: hidden; font-size: 11px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.guide-rail > small { margin-top: auto; color: var(--text-tertiary); font-size: 9px; line-height: 1.55; }
+.guide-stage {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  padding: 58px clamp(34px, 5vw, 64px) 36px;
+}
+.guide-language-control {
+  position: absolute;
+  top: 20px;
+  right: 60px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-solid) 70%, transparent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .3);
+}
+.guide-language-control > span { margin: 0 6px; color: var(--text-tertiary); font-size: 8px; font-weight: 760; letter-spacing: .05em; text-transform: uppercase; }
+.guide-language-control button {
+  min-height: 28px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 9px;
+  font-weight: 760;
+  cursor: pointer;
+}
+.guide-language-control button.active { background: var(--accent-soft); color: var(--accent-strong); }
+.guide-stage .welcome-kicker { color: var(--accent-strong); font-size: 9px; font-weight: 820; letter-spacing: .15em; }
+.guide-stage h1 { max-width: 560px; margin: 15px 0 0; font-size: clamp(36px, 5vw, 54px); font-weight: 650; letter-spacing: -.055em; line-height: .98; }
+.guide-stage > p { max-width: 590px; min-height: 68px; margin: 20px 0 0; color: var(--text-secondary); font-size: 14px; line-height: 1.65; }
+.guide-portfolio-preview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 25px;
+}
+.guide-portfolio-preview > div {
+  display: grid;
+  min-width: 0;
+  min-height: 112px;
+  align-content: space-between;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 19px;
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .35);
+}
+.guide-portfolio-preview span { color: var(--text-tertiary); font-size: 9px; font-weight: 820; letter-spacing: .11em; }
+.guide-portfolio-preview strong { margin-top: 12px; font-size: 22px; font-weight: 640; letter-spacing: -.04em; }
+.guide-portfolio-preview small { overflow: hidden; color: var(--text-tertiary); font-size: 9px; line-height: 1.4; text-overflow: ellipsis; }
+.guide-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-top: 26px; }
+.guide-actions .secondary-button, .guide-actions .primary-button { min-height: 44px; }
+.guide-open-view { margin-left: auto; }
+.guide-progress { display: flex; gap: 6px; margin-top: 27px; }
+.guide-progress i { width: 18px; height: 3px; border-radius: 999px; background: var(--line-strong); transition: width .25s var(--spring), background .25s ease; }
+.guide-progress i.active { width: 40px; background: var(--accent); }
+.demo-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 22px;
+}
+.demo-quick-actions button {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 66px;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 17px;
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  color: var(--text);
+  text-align: left;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .32);
+  cursor: pointer;
+  transition: border-color .2s ease, transform .2s var(--spring), box-shadow .2s ease;
+}
+.demo-quick-actions button:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); box-shadow: var(--shadow-soft); transform: translateY(-2px); }
+.demo-quick-actions button > span { color: var(--accent-strong); font-size: 9px; font-weight: 800; }
+.demo-quick-actions button div { display: grid; min-width: 0; gap: 3px; }
+.demo-quick-actions strong, .demo-quick-actions small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.demo-quick-actions strong { font-size: 10px; }
+.demo-quick-actions small { color: var(--text-tertiary); font-size: 8px; }
+.demo-quick-actions i { color: var(--text-tertiary); font-size: 11px; font-style: normal; }
+@keyframes guide-backdrop-in { from { opacity: 0; } }
+@keyframes guide-card-in { from { opacity: 0; transform: translateY(18px) scale(.975); } }
 
+@media (max-width: 860px) {
+  .demo-guide { grid-template-columns: 1fr; width: min(620px, 100%); overflow-y: auto; }
+  .guide-rail { display: block; padding: 22px 56px 14px 20px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .guide-rail ol, .guide-rail > small { display: none; }
+  .guide-stage { padding: 34px 24px 26px; }
+  .guide-language-control { position: static; align-self: flex-start; margin: 0 0 26px; }
+  .demo-quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .demo-guide-overlay { align-items: end; padding: 8px; }
+  .demo-guide { min-height: min(690px, calc(100svh - 16px)); max-height: calc(100svh - 16px); border-radius: 27px; }
+  .guide-stage { justify-content: flex-start; padding: 30px 18px 20px; }
+  .guide-stage h1 { font-size: 38px; }
+  .guide-stage > p { min-height: 0; font-size: 13px; }
+  .guide-portfolio-preview { grid-template-columns: 1fr; margin-top: 20px; }
+  .guide-portfolio-preview > div { grid-template-columns: 58px 90px minmax(0, 1fr); min-height: 58px; align-items: center; padding: 10px 12px; }
+  .guide-portfolio-preview strong { margin-top: 0; font-size: 17px; }
+  .guide-actions { margin-top: 20px; }
+  .guide-actions .secondary-button, .guide-actions .primary-button { flex: 1; }
+  .guide-open-view { width: 100%; margin-left: 0; text-align: center; }
+  .guide-progress { margin-top: 16px; }
+  .demo-quick-actions { display: flex; overflow-x: auto; margin-right: -14px; padding-right: 14px; scrollbar-width: none; }
+  .demo-quick-actions::-webkit-scrollbar { display: none; }
+  .demo-quick-actions button { min-width: 190px; }
+  .language-toggle { min-width: 54px; padding: 0 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .demo-guide-overlay, .demo-guide { animation: none !important; }
+  .guide-rail li button, .guide-close, .guide-progress i, .demo-quick-actions button { transition: none !important; }
+}
