@@ -183,6 +183,8 @@ const englishByChinese: Record<string, string> = {
   "运行情景": "Run a scenario", "改变假设，不改正式账本。": "Change assumptions without changing the ledger.",
   "开始体验": "Explore the demo", "直接试录交易": "Record a trade",
   "组合轨迹": "Portfolio trajectory", "每日快照写入后，这里会形成可核对的历史曲线。": "A traceable history appears here after daily snapshots are saved.",
+  "持仓净值": "Holdings value", "较上一快照": "vs previous snapshot", "首个快照": "First snapshot",
+  "拖动或点击查看每日变化": "Drag or tap for daily change", "可拖动查看每日组合净值与涨跌": "Interactive daily portfolio value and change chart",
   "组合历史价值曲线": "Historical portfolio value chart", "数据健康概览": "Data health overview",
   "快速录入": "Quick entry", "你做了什么交易？": "What did you trade?", "选择动作后，只需完成三步。高级字段默认收起。": "Choose an action, then complete three focused steps. Advanced fields stay out of the way.",
   "其他交易": "Other transaction", "交易录入步骤": "Transaction entry steps", "选择交易": "Choose transaction",

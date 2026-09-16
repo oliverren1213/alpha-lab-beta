@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { installTranslations, translateText, type Language } from "../lib/i18n";
-import { calculatePortfolio, currencyRate, runScenario, type ScenarioShock } from "../lib/portfolio";
+import { calculatePortfolio, currencyRate, portfolioDayChange, runScenario, type ScenarioShock } from "../lib/portfolio";
 import { normalizeTradeDate, transactionAmountPreview } from "../lib/transaction-form";
 import { transactionFingerprint } from "../lib/transaction-fingerprint";
 import { recognizeScreenshotLocally, type ResolvedScreenshotTrade } from "../lib/screenshot-import";
@@ -12,6 +12,7 @@ import type {
   Currency,
   LabData,
   LedgerTransaction,
+  PortfolioHistoryPoint,
   TransactionType,
 } from "../lib/types";
 
@@ -515,15 +516,6 @@ function PortfolioView({
     { label: "持仓市值", value: summary.marketValueUsd, text: undefined },
     { label: "净投入", value: summary.netContributionsUsd, text: undefined },
     { label: "账本持仓成本", value: positionCostUsd, text: undefined },
-    {
-      label: "现金余额",
-      value: summary.cashMode === "UNTRACKED" ? null : summary.cashUsd,
-      text: summary.cashMode === "UNTRACKED"
-        ? "未追踪"
-        : summary.cashMode === "PARTIAL"
-          ? `${money(summary.cashUsd)} · 部分追踪`
-          : money(summary.cashUsd),
-    },
   ] as const;
   const pnlBreakdown = [
     ["已实现收益", summary.realizedPnlUsd],
@@ -551,21 +543,28 @@ function PortfolioView({
       : `${formatDate(priceDates[0])} – ${formatDate(priceDates.at(-1)!)}`;
   const healthIssues = [
     ...(summary.missingAssetIds.length ? [`${summary.missingAssetIds.length} 项持仓缺少价格或汇率`] : []),
-    ...(summary.cashMode === "TRACKED" && summary.cashUsd < -0.005 ? [`现金余额 ${money(summary.cashUsd)}，可能缺少入金或转账记录`] : []),
     ...(pendingCount ? [`${pendingCount} 笔交易待核对`] : []),
   ];
   const healthTitle = summary.missingAssetIds.length
     ? "估值不完整"
     : pendingCount
       ? "账本有待核对项"
-      : "现金余额为负";
+      : "数据状态正常";
   const hasUsefulSector = summary.allocation.bySector.some((row) => row.label !== "Unclassified");
-  const trendValues = data.history
-    .slice(-24)
-    .map((point) => point.portfolio)
-    .filter((value): value is number => Number.isFinite(value));
-  if (summary.totalValueUsd != null && (!trendValues.length || trendValues.at(-1) !== summary.totalValueUsd)) {
-    trendValues.push(summary.totalValueUsd);
+  const trendPoints = data.history
+    .filter((point) => Number.isFinite(point.portfolio))
+    .slice(-30);
+  if (summary.totalValueUsd != null) {
+    const currentPoint: PortfolioHistoryPoint = {
+      date: summary.asOf,
+      portfolio: summary.totalValueUsd,
+      contributions: summary.netContributionsUsd,
+      qqq: null,
+      spy: null,
+      status: "CURRENT",
+    };
+    if (trendPoints.at(-1)?.date === currentPoint.date) trendPoints[trendPoints.length - 1] = currentPoint;
+    else trendPoints.push(currentPoint);
   }
 
   return (
@@ -575,7 +574,7 @@ function PortfolioView({
         <div className="hero-grid">
           <div className="hero-value-block">
             <div className="hero-meta">
-              <div><span>账户净值</span><small>{valuationRange} 价格 · {currencyLabels[currency]} 显示</small></div>
+              <div><span>持仓净值</span><small>{valuationRange} 价格 · {currencyLabels[currency]} 显示</small></div>
               <DataFreshness data={data} />
             </div>
             <strong id="portfolio-value">{money(summary.totalValueUsd)}</strong>
@@ -585,28 +584,20 @@ function PortfolioView({
             </div>
           </div>
           <div className="hero-trend">
-            <header><div><span>组合轨迹</span><small>{data.history.length > 1 ? `${data.history.length} 个真实快照` : trendValues.length > 1 ? "历史快照 + 当前估值" : "等待更多每日快照"}</small></div><span className="trend-live"><i />VALUATION</span></header>
-            <PortfolioSparkline values={trendValues} positive={summary.cumulativePnlUsd == null || summary.cumulativePnlUsd >= 0} />
-            <footer><span>{data.history.length ? formatDate(data.history.at(-Math.min(data.history.length, 24))!.date) : "—"}</span><span>{data.lastSuccessfulUpdateAt ? formatDate(data.lastSuccessfulUpdateAt) : data.history.length ? formatDate(data.history.at(-1)!.date) : "—"}</span></footer>
+            <header><div><span>组合轨迹</span><small>{data.history.length > 1 ? `${data.history.length} 个真实快照` : trendPoints.length > 1 ? "历史快照 + 当前估值" : "等待更多每日快照"}</small></div><span className="trend-live"><i />VALUATION</span></header>
+            <PortfolioChart points={trendPoints} money={money} />
           </div>
         </div>
       </section>
 
       <section className="metric-board primary-metrics" aria-label="组合关键指标">
         {primaryMetrics.map((metric, index) => (
-          <div className="metric" key={metric.label} style={{ "--metric-index": index } as React.CSSProperties}>
+          <div className={`metric ${index === 0 ? "metric-primary" : ""}`} key={metric.label} style={{ "--metric-index": index } as React.CSSProperties}>
             <span>{metric.label}</span>
-            <strong className={metric.label === "现金余额" ? toneClass(metric.value) : "neutral-number"}>{metric.text ?? money(metric.value)}</strong>
+            <strong className="neutral-number">{metric.text ?? money(metric.value)}</strong>
           </div>
         ))}
       </section>
-
-      {summary.cashMode !== "TRACKED" ? (
-        <div className="cash-note">
-          <span aria-hidden="true">≈</span>
-          <div><strong>{summary.cashMode === "PARTIAL" ? "现金部分追踪" : "现金未追踪"}</strong><small>只记录成交时，Alpha Lab 不会凭空推算负现金；组合净值按可估值持仓计算。</small></div>
-        </div>
-      ) : null}
 
       {healthIssues.length ? (
         <div className={`health-bar ${summary.missingAssetIds.length ? "error" : "warning"}`}>
@@ -1448,28 +1439,70 @@ function DataFreshness({ data }: { data: LabData }) {
   return <div className={`freshness ${stale || failed ? "attention" : "current"}`}><strong>{!data.lastSuccessfulUpdateAt ? "未更新" : failed ? "部分更新" : stale ? "数据过期" : "数据已更新"}</strong><small>{data.lastSuccessfulUpdateAt ? formatDateTime(data.lastSuccessfulUpdateAt) : "等待首次真实写入"}</small></div>;
 }
 
-function PortfolioSparkline({ values, positive }: { values: number[]; positive: boolean }) {
-  if (values.length < 2) return <div className="sparkline-empty">每日快照写入后，这里会形成可核对的历史曲线。</div>;
+function PortfolioChart({ points, money }: { points: PortfolioHistoryPoint[]; money: (value: number | null | undefined) => string }) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  if (points.length < 2) return <div className="sparkline-empty">每日快照写入后，这里会形成可核对的历史曲线。</div>;
   const width = 520;
   const height = 180;
-  const padding = 8;
+  const padding = 10;
+  const values = points.map((point) => point.portfolio);
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min || 1;
-  const points = values.map((value, index) => {
+  const chartPoints = values.map((value, index) => {
     const x = padding + index * ((width - padding * 2) / (values.length - 1));
     const y = height - padding - ((value - min) / range) * (height - padding * 2);
     return [x, y] as const;
   });
-  const line = points.map(([x, y], index) => `${index ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ");
-  const area = `${line} L${points.at(-1)![0].toFixed(1)} ${height} L${points[0][0].toFixed(1)} ${height} Z`;
-  return <svg className={`portfolio-sparkline ${positive ? "positive" : "negative"}`} viewBox={`0 0 ${width} ${height}`} role="img" aria-label="组合历史价值曲线" preserveAspectRatio="none">
-    <defs><linearGradient id="portfolio-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="currentColor" stopOpacity=".28" /><stop offset="1" stopColor="currentColor" stopOpacity="0" /></linearGradient></defs>
-    <path className="sparkline-grid" d={`M0 ${height * .33}H${width}M0 ${height * .66}H${width}`} />
-    <path className="sparkline-area" d={area} />
-    <path className="sparkline-line" d={line} pathLength="1" />
-    <circle className="sparkline-point" cx={points.at(-1)![0]} cy={points.at(-1)![1]} r="4" />
-  </svg>;
+  const line = chartPoints.map(([x, y], index) => `${index ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ");
+  const area = `${line} L${chartPoints.at(-1)![0].toFixed(1)} ${height} L${chartPoints[0][0].toFixed(1)} ${height} Z`;
+  const selectedIndex = activeIndex == null ? points.length - 1 : Math.min(activeIndex, points.length - 1);
+  const selected = points[selectedIndex];
+  const change = portfolioDayChange(points, selectedIndex);
+  const positive = (change.amount ?? selected.portfolio - points[0].portfolio) >= 0;
+  const selectAt = (clientX: number, element: SVGSVGElement) => {
+    const bounds = element.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (clientX - bounds.left) / bounds.width));
+    setActiveIndex(Math.round(ratio * (points.length - 1)));
+  };
+  const [activeX, activeY] = chartPoints[selectedIndex];
+  return <div
+    className={`interactive-chart ${positive ? "positive" : "negative"}`}
+    tabIndex={0}
+    role="slider"
+    aria-valuemin={0}
+    aria-valuemax={points.length - 1}
+    aria-valuenow={selectedIndex}
+    aria-valuetext={`${formatDate(selected.date)}，${money(selected.portfolio)}`}
+    aria-label={`组合历史曲线，已选择 ${formatDate(selected.date)}`}
+    onKeyDown={(event) => {
+      if (event.key === "ArrowLeft") setActiveIndex((index) => Math.max(0, index - 1));
+      if (event.key === "ArrowRight") setActiveIndex((index) => Math.min(points.length - 1, index + 1));
+    }}
+  >
+    <div className="chart-readout" aria-live="polite">
+      <div><span>{formatDate(selected.date)}</span><small>{selectedIndex ? "较上一快照" : "首个快照"}</small></div>
+      <div><strong>{money(selected.portfolio)}</strong><span className={toneClass(change.amount)}>{change.amount == null ? "—" : `${money(change.amount)} · ${formatPercent(change.rate)}`}</span></div>
+    </div>
+    <svg
+      className="portfolio-sparkline"
+      viewBox={`0 0 ${width} ${height}`}
+      role="img"
+      aria-label="可拖动查看每日组合净值与涨跌"
+      preserveAspectRatio="none"
+      onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); selectAt(event.clientX, event.currentTarget); }}
+      onPointerMove={(event) => { if (event.pointerType === "mouse" || event.currentTarget.hasPointerCapture(event.pointerId)) selectAt(event.clientX, event.currentTarget); }}
+    >
+      <defs><linearGradient id="portfolio-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="currentColor" stopOpacity=".3" /><stop offset="1" stopColor="currentColor" stopOpacity="0" /></linearGradient></defs>
+      <path className="sparkline-grid" d={`M0 ${height * .33}H${width}M0 ${height * .66}H${width}`} />
+      <path className="sparkline-area" d={area} />
+      <path className="sparkline-line" d={line} pathLength="1" />
+      <line className="chart-crosshair" x1={activeX} x2={activeX} y1="0" y2={height} />
+      <circle className="sparkline-halo" cx={activeX} cy={activeY} r="9" />
+      <circle className="sparkline-point" cx={activeX} cy={activeY} r="4" />
+    </svg>
+    <div className="chart-axis"><span>{formatDate(points[0].date)}</span><em>拖动或点击查看每日变化</em><span>{formatDate(points.at(-1)!.date)}</span></div>
+  </div>;
 }
 
 function AllocationList({ title, rows, money }: {

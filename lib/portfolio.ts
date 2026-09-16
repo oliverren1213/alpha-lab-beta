@@ -5,6 +5,7 @@ import type {
   Currency,
   FxSnapshot,
   LedgerTransaction,
+  PortfolioHistoryPoint,
   PriceSnapshot,
 } from "./types";
 
@@ -63,8 +64,6 @@ export type PortfolioSummary = {
   totalValueUsd: number | null;
   netContributionsUsd: number;
   marketValueUsd: number | null;
-  cashUsd: number;
-  cashMode: "TRACKED" | "PARTIAL" | "UNTRACKED";
   todayPnlUsd: number | null;
   cumulativePnlUsd: number | null;
   realizedPnlUsd: number;
@@ -86,6 +85,18 @@ export type PortfolioSummary = {
 
 const EPSILON = 1e-8;
 
+export function portfolioDayChange(points: PortfolioHistoryPoint[], index: number) {
+  if (index <= 0 || index >= points.length) return { amount: null, rate: null };
+  const previous = points[index - 1];
+  const current = points[index];
+  const externalFlow = current.contributions - previous.contributions;
+  const amount = current.portfolio - previous.portfolio - externalFlow;
+  return {
+    amount,
+    rate: Math.abs(previous.portfolio) <= EPSILON ? null : amount / previous.portfolio,
+  };
+}
+
 export function calculatePortfolio(input: {
   accounts: Account[];
   assets: Asset[];
@@ -99,23 +110,11 @@ export function calculatePortfolio(input: {
   const latestPrices = latestPriceMap(input.prices);
   const previousPrices = referencePriceMap(input.prices, latestPrices);
   const positions = new Map<string, PositionState>();
-  const cashByAccount = new Map<string, number>();
-  const contributionsByAccount = new Map<string, number>();
-  const accountsWithTransactions = new Set(input.transactions.map((transaction) => transaction.accountId));
-  const accountsWithCashLedger = new Set(input.transactions
-    .filter((transaction) => transaction.type === "CASH_IN" || transaction.type === "CASH_OUT")
-    .map((transaction) => transaction.accountId));
+  let netContributionsUsd = 0;
   let dividendIncomeUsd = 0;
   let withholdingTaxUsd = 0;
   let feesUsd = 0;
   let realizedPnlUsd = 0;
-
-  const addCash = (accountId: string, amount: number) => {
-    cashByAccount.set(accountId, (cashByAccount.get(accountId) ?? 0) + amount);
-  };
-  const addContribution = (accountId: string, amount: number) => {
-    contributionsByAccount.set(accountId, (contributionsByAccount.get(accountId) ?? 0) + amount);
-  };
 
   const sorted = [...input.transactions].sort(
     (a, b) => a.tradedAt.localeCompare(b.tradedAt) || a.id.localeCompare(b.id),
@@ -127,12 +126,8 @@ export function calculatePortfolio(input: {
     const taxBase = transaction.tax * fx;
 
     if (transaction.type === "CASH_IN" || transaction.type === "CASH_OUT") {
-      const amount = requiredAmount(transaction) * fx;
-      const direction = transaction.type === "CASH_IN" ? 1 : -1;
-      feesUsd += feeBase;
-      withholdingTaxUsd += taxBase;
-      addCash(transaction.accountId, direction * amount - feeBase - taxBase);
-      addContribution(transaction.accountId, direction * amount);
+      // Cash transfers remain in the audit ledger, but are intentionally excluded
+      // from portfolio valuation and return calculations.
       continue;
     }
 
@@ -141,21 +136,21 @@ export function calculatePortfolio(input: {
       feesUsd += feeBase;
       withholdingTaxUsd += taxBase;
       dividendIncomeUsd += gross;
-      addCash(transaction.accountId, gross - feeBase - taxBase);
+      netContributionsUsd -= gross - feeBase - taxBase;
       continue;
     }
 
     if (transaction.type === "DIVIDEND_TAX") {
       const amount = Math.abs(transaction.totalAmount ?? transaction.tax ?? 0) * fx;
       withholdingTaxUsd += amount;
-      addCash(transaction.accountId, -amount);
+      netContributionsUsd += amount;
       continue;
     }
 
     if (transaction.type === "FEE") {
       const amount = Math.abs(transaction.totalAmount ?? transaction.fee ?? 0) * fx;
       feesUsd += amount;
-      addCash(transaction.accountId, -amount);
+      netContributionsUsd += amount;
       continue;
     }
 
@@ -208,7 +203,7 @@ export function calculatePortfolio(input: {
         localUnitCost: localCost / quantity,
         baseUnitCost: baseCost / quantity,
       });
-      addCash(transaction.accountId, -baseCost);
+      netContributionsUsd += baseCost;
       positions.set(key, state);
       continue;
     }
@@ -228,7 +223,7 @@ export function calculatePortfolio(input: {
     const realized = proceedsBase - allocated.base;
     state.realized += realized;
     realizedPnlUsd += realized;
-    addCash(transaction.accountId, proceedsBase);
+    netContributionsUsd -= proceedsBase;
     positions.set(key, state);
   }
 
@@ -318,22 +313,7 @@ export function calculatePortfolio(input: {
     });
   }
 
-  const trackedCashUsd = [...accountsWithCashLedger]
-    .reduce((total, accountId) => total + (cashByAccount.get(accountId) ?? 0), 0);
-  const untrackedAccountIds = [...accountsWithTransactions]
-    .filter((accountId) => !accountsWithCashLedger.has(accountId));
-  const cashMode: PortfolioSummary["cashMode"] = accountsWithCashLedger.size === 0
-    ? "UNTRACKED"
-    : untrackedAccountIds.length
-      ? "PARTIAL"
-      : "TRACKED";
-  const impliedUntrackedContributions = untrackedAccountIds
-    .reduce((total, accountId) => total - (cashByAccount.get(accountId) ?? 0), 0);
-  const explicitTrackedContributions = [...accountsWithCashLedger]
-    .reduce((total, accountId) => total + (contributionsByAccount.get(accountId) ?? 0), 0);
-  const netContributionsUsd = explicitTrackedContributions + impliedUntrackedContributions;
-  const cashUsd = trackedCashUsd;
-  const totalValueUsd = hasMissingPrice ? null : investedMarketValueUsd + trackedCashUsd;
+  const totalValueUsd = hasMissingPrice ? null : investedMarketValueUsd;
   for (const position of calculated) {
     position.weight =
       totalValueUsd && position.marketValueUsd != null
@@ -354,8 +334,6 @@ export function calculatePortfolio(input: {
     totalValueUsd,
     netContributionsUsd,
     marketValueUsd: hasMissingPrice ? null : investedMarketValueUsd,
-    cashUsd,
-    cashMode,
     todayPnlUsd: hasMissingPreviousPrice || hasMissingPrice ? null : todayPnlUsd,
     cumulativePnlUsd,
     realizedPnlUsd,

@@ -11,7 +11,7 @@ const vite = await createServer({
 });
 after(() => vite.close());
 
-const { calculatePortfolio, currencyRate, runScenario } =
+const { calculatePortfolio, currencyRate, portfolioDayChange, runScenario } =
   await vite.ssrLoadModule("/lib/portfolio.ts");
 const { scheduledRomeMode, olderThan90Minutes } =
   await vite.ssrLoadModule("/lib/schedule.ts");
@@ -202,26 +202,24 @@ test("multi-currency valuation uses current FX and preserves FX attribution", ()
   assert.ok(Math.abs(value.positions[0].fxPnlUsd - 10) < 1e-9);
 });
 
-test("cash transfers change capital but not investment return", () => {
+test("cash transfers remain audit-only and do not affect portfolio values", () => {
   const value = summary([tx("1", "CASH_IN", { totalAmount: 1_000 })], []);
-  assert.equal(value.netContributionsUsd, 1_000);
-  assert.equal(value.totalValueUsd, 1_000);
+  assert.equal(value.netContributionsUsd, 0);
+  assert.equal(value.totalValueUsd, 0);
   assert.equal(value.cumulativePnlUsd, 0);
 });
 
 test("trade-only ledgers do not invent a negative cash balance", () => {
-  const value = summary([tx("1", "BUY", { quantity: 2, unitPrice: 100 })], [
-    price(stock.id, "2026-01-20", 100), price(stock.id, "2026-01-21", 110),
+  const value = summary([tx("1", "BUY", { quantity: 2, unitPrice: 100, fee: 2 })], [
+    price(stock.id, "2026-01-20", 105), price(stock.id, "2026-01-21", 110),
   ]);
-  assert.equal(value.cashMode, "UNTRACKED");
-  assert.equal(value.cashUsd, 0);
-  assert.equal(value.netContributionsUsd, 200);
+  assert.equal(value.netContributionsUsd, 202);
   assert.equal(value.totalValueUsd, 220);
-  assert.equal(value.cumulativePnlUsd, 20);
+  assert.equal(value.cumulativePnlUsd, 18);
 });
 
-test("cash tracking is scoped per account when ledgers are mixed", () => {
-  const secondAccount = { ...account, id: "account-second" };
+test("cash transfers are ignored while trades determine net investment", () => {
+  const secondAccount = { ...account, id: "account-second", name: "Second" };
   const secondStock = { ...stock, id: "asset-second", symbol: "TWO" };
   const value = summary([
     tx("1", "CASH_IN", { totalAmount: 1_000 }),
@@ -231,10 +229,18 @@ test("cash tracking is scoped per account when ledgers are mixed", () => {
     price(stock.id, "2026-01-20", 100), price(stock.id, "2026-01-21", 110),
     price(secondStock.id, "2026-01-20", 50), price(secondStock.id, "2026-01-21", 55),
   ], { accounts: [account, secondAccount], assets: [stock, secondStock] });
-  assert.equal(value.cashMode, "PARTIAL");
-  assert.equal(value.cashUsd, 800);
-  assert.equal(value.netContributionsUsd, 1_050);
-  assert.equal(value.totalValueUsd, 1_075);
+  assert.equal(value.netContributionsUsd, 250);
+  assert.equal(value.totalValueUsd, 275);
+  assert.equal(value.cumulativePnlUsd, 25);
+});
+
+test("daily portfolio change removes external cash flow", () => {
+  const points = [
+    { date: "2026-09-14", portfolio: 1_000, contributions: 800 },
+    { date: "2026-09-15", portfolio: 1_150, contributions: 900 },
+  ];
+  assert.deepEqual(portfolioDayChange(points, 1), { amount: 50, rate: 0.05 });
+  assert.deepEqual(portfolioDayChange(points, 0), { amount: null, rate: null });
 });
 
 test("local OCR parser extracts labeled trade fields and flags uncertainty", () => {
