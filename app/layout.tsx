@@ -2,6 +2,11 @@ import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import "./globals.css";
 import "./liquid-v2.css";
+import "./spectrum.css";
+import "./motion.css";
+import "./daily-brief.css";
+import "./portfolio-chart.css";
+import "./beta-sync.css";
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
@@ -39,7 +44,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html data-pride="mlm" lang="en" suppressHydrationWarning>
       <body>{children}</body>
     </html>
   );

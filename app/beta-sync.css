@@ -1,0 +1,13 @@
+/* Public onboarding shares the studio palette and stays opaque for readability. */
+.demo-guide { background: var(--surface-solid); backdrop-filter: none; -webkit-backdrop-filter: none; }
+.guide-close { color: var(--text); }
+.guide-brand > span { background: linear-gradient(var(--studio-ink),var(--studio-ink)) padding-box,var(--pride-spectrum) border-box; border: 2px solid transparent; }
+.demo-ribbon { border-radius: 18px; }
+.demo-quick-actions { min-width: 0; }
+.about-view { color: var(--text); }
+@media (max-width: 640px) {
+  .demo-ribbon { align-items: stretch; flex-direction: column; gap: 12px; }
+  .demo-ribbon-actions { justify-content: space-between; flex-wrap: wrap; }
+  .demo-guide { max-height: calc(100dvh - 16px); overflow-y: auto; }
+  .user-badge { display: none; }
+}

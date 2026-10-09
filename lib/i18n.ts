@@ -1,6 +1,6 @@
 export type Language = "en" | "zh";
 
-const englishByChinese: Record<string, string> = {
+const betaEnglish: Record<string, string> = {
   "先选语言": "Choose your language", "Public Beta 默认以英文打开。右上角的“中文 / EN”按钮可以随时切换，页面内容会立即同步。": "Public Beta always opens in English. Use the “中文 / EN” control in the top-right to switch the entire interface at any time.",
   "先读懂组合": "Read the portfolio", "从账户净值、今日影响和累计损益开始，再向下核对 NVDA 100 股、GOOGL 25 股与 $1,000 黄金仓位的模拟成本口径。": "Start with portfolio value, today’s impact and cumulative P&L, then trace the simulated cost basis of 100 NVDA shares, 25 GOOGL shares and a $1,000 gold allocation.",
   "再追溯每笔交易": "Trace every trade", "账本是所有计算的源头。试着新增或编辑一笔模拟交易；重复成交会被自动识别，不会悄悄写入两次。": "The ledger drives every calculation. Add or edit a simulated trade; duplicate executions are detected before they can be recorded twice.",
@@ -212,12 +212,297 @@ const englishByChinese: Record<string, string> = {
   "Public Beta 边界": "Public Beta boundary", "此演示不会执行交易，也不提供个性化投资建议。匿名访客获得隔离的示例数据，并可随时重置空间。": "This demo does not execute trades or provide personalized investment advice. Anonymous visitors receive isolated example data and may reset the workspace at any time.",
 };
 
+const englishByChinese: Record<string, string> = {
+  "建立新的投资逻辑": "Create a new investment thesis",
+  "价格 ·": "prices ·",
+  "显示": "display",
+  "演示空间使用固定且明确标注的模拟价格，不会伪装成实时行情。": "The demo uses explicitly simulated prices. See Data notes for the calculation assumptions.",
+  "QQQ 与 SPY 最近正式收盘基准": "Latest official QQQ and SPY closing benchmarks",
+  "上午更新；保留实际价格日期，不把盘中报价写成收盘价": "Updated in the morning with the actual closing-price date preserved",
+  "最近一次人工确认的基金 NAV": "Latest manually confirmed fund NAV",
+  "无新净值时保留最近有效值及原始净值日期": "Retain the last valid NAV and its original date until a new value is available",
+  "ECB 参考汇率": "ECB reference exchange rates",
+  "最近公布的工作日参考汇率": "Latest published business-day reference rates",
+  "上午使用最近正式收盘价，下午使用免费行情可提供的最新报价": "Latest official close in the morning; available free quotes in the afternoon",
+  "免费个人用途接口，保留原始报价时间与数据属性": "Free personal-use API; quote times and data attributes preserved",
+  "尚未配置 FINNHUB_API_KEY": "Finnhub API key not configured",
+  "基金 NAV": "Fund NAV",
+  ...betaEnglish,
+  "这段时间的账本损益 · USD": "Ledger P&L over this period · USD",
+  "沿用最近有效价格": "Latest valid marks carried forward",
+  "边界价格齐全": "Boundary marks available",
+  "按当前账本与加权平均成本回算，含已实现收益、股息及费用；缺少边界价格时留空，不代表判断本身的好坏。": "Restated from the current ledger using weighted-average cost, including realized gains, dividends and charges. Missing boundary valuations stay blank; returns alone do not judge the quality of a decision.",
+  "全部已存在，完成核对": "All already recorded — finish review",
+  "截图、文字与扫描 PDF 在本机识别。候选和文字来源保存到私人收件箱；原文件只在这次浏览器会话中预览。": "Images, text and scanned PDFs are recognized on-device. Candidates and source text are saved in your private inbox; original files are previewed only in this browser session.",
+  "为什么买入 / 备注（选填）": "Reason for buying / note (optional)",
+  "交易备注（选填）": "Trade note (optional)",
+  "记录一句当时的判断，或订单号与核对线索": "Record your reasoning, order reference or reconciliation notes",
+  "计算口径与历史回算": "Methodology & restated history",
+  "Pride 配色": "Pride palette", "私人工作室": "PRIVATE STUDIO",
+  "持仓净值": "Holdings value", "均价": "Avg.",
+  "删除批次会同时删除该批次写入的交易，不影响其他来源。": "Deleting a batch also deletes the trades it imported. Other sources are unchanged.",
+  "忠于自己。\n看清决定。": "Be yourself.\nOwn your decisions.",
+  "有自己的颜色，也有自己的判断。": "Your colors. Your perspective.",
+  "数量 / 金额": "Quantity / amount",
+  "成交与费用，分开核对": "Execution and charges, checked separately",
+  "先记录成交，手续费与税费暂记 0；月结单到来后核对并更新原记录。": "Record the execution first, with provisional fees and taxes of 0. Reconcile the monthly statement and update the original record later.",
+  "手续费与税费未出账时先记 0，收益暂按该金额计算。上传 HSBC 月结单后，确认差异并修正原交易，不重复新增。": "Unbilled fees and taxes start at 0, so returns are provisional. Upload your HSBC monthly statement, review differences and correct existing trades without duplicates.",
+  "上传月结单": "Upload monthly statement", "费用核对": "Charge verification",
+  "待月结单": "Awaiting statement", "费用已确认": "Charges confirmed", "结单已核对": "Statement reconciled",
+  "暂记，待月结单": "Provisional, awaiting statement", "已核对费用凭证": "Charge receipt verified", "已按月结单核对": "Monthly statement verified",
+  "成交已确认": "Execution confirmed", "确认日期、数量和成交价；费用可以先记 0，月结单出来再修正。": "Confirm the date, quantity and execution price. Charges may start at 0 and be corrected after the monthly statement.",
+  "成交截图缺少费用时先记 0，待月结单核对。结单差异逐笔确认后替换原记录；未知交收日期不猜填。": "Missing screenshot charges start at 0 pending statement reconciliation. Review statement differences before replacing original records; unknown settlement dates stay blank.",
+  "确认成交日期、数量和价格。暂记费用不是最终结单数字；已核对的费用不会被截图中的暂记 0 覆盖。": "Confirm the execution date, quantity and price. Provisional charges are not final statement figures; verified charges will not be overwritten by provisional screenshot zeros.",
+  "交易已保存，请刷新重新读取。不要重复录入。": "Trade saved. Refresh to reload it; do not enter it again.",
+  "交易记录": "Transactions", "文件收件箱": "Document inbox",
+  "账本工作区": "Ledger workspace", "今日待办": "Today's actions",
+  "核对成交记录": "Verify trade records", "回顾投资判断": "Review investment decisions",
+  "检查行情与净值": "Check prices & NAVs", "价格、净值日期与更新记录": "Prices, NAV dates and update history",
+  "账本与数据目前没有待处理提醒。": "No outstanding ledger or data reminders.",
+  "税费后股息": "Net dividends", "独立费用": "Standalone expenses",
+  "累计损益 = 已实现 + 未实现 + 税费后股息 − 独立费用。成交手续费已计入成本及卖出收入，不再重复扣除。": "Cumulative P&L = realized + unrealized + net dividends − standalone expenses. Trade fees are already included in cost and sale proceeds; they are not deducted twice.",
+  "按当前可估值持仓计算，不包含账户现金。": "Based on currently valued holdings. Account cash is excluded.",
+  "成交与投资逻辑": "Trades & investment thesis", "打开完整账本": "Open full ledger",
+  "图表指标": "Chart metric", "图表时间范围": "Chart time range", "组合历史曲线": "Portfolio history",
+  "历史数据缺口": "Historical data gap", "首个估值日": "First valuation",
+  "较上一日 · 扣除资金影响": "vs previous day · flow-adjusted",
+  "此范围缺少历史价格，无法重建估值。": "Historical prices are missing for this range. Valuation cannot be reconstructed.",
+  "按当前账本重算 · 缺口不连线。涨跌率以此前持仓市值为分母，非精确时间加权回报。": "Restated from the current ledger; gaps are not connected. Returns use prior holdings value as denominator, not an exact time-weighted return.",
+  "部分资产沿用最近有效价格": "Some assets use their last valid mark",
+  "RESTATED": "Restated", "CARRIED": "Carried marks", "GAP": "Data gap",
+  "展开": "Expand", "数量 / 单价": "Quantity / price", "未确认": "Unconfirmed", "交收日期": "Settlement date",
+  "回到当初的判断": "Revisit the original decision", "复盘筛选": "Review filter",
+  "先核对事实，再评价判断、仓位与执行。短期涨跌不是唯一成绩单。": "Check the facts, then evaluate the thesis, sizing and execution. Short-term price moves are not the only scorecard.",
+  "即将到期": "Upcoming", "已完成": "Completed", "待复盘": "Due for review",
+  "目前没有到期复盘。建立投资逻辑后，会安排 7、30、90 天的回顾。": "No reviews are due. New theses schedule reviews at 7, 30 and 90 days.",
+  "此分类暂无记录。": "No records in this category.", "当初的理由": "Original rationale",
+  "之后的记录": "Subsequent records", "最新判断": "Latest view",
+  "发生了什么？哪些事实支持或反驳了原判断？": "What happened? Which facts supported or contradicted the original view?",
+  "判断结果": "Thesis assessment", "仓位是否合适": "Position sizing", "下次会怎么做": "What will you do next time?",
+  "完成这次复盘": "Complete review", "有事实支持": "Supported by evidence", "证据仍不足": "Evidence still unclear",
+  "理由有所减弱": "Thesis weakened", "原判断已失效": "Thesis invalidated",
+  "符合计划": "Appropriate", "仓位过大": "Too large", "仓位过小": "Too small", "暂不确定": "Unclear",
+  "我的本周判断": "My weekly reflections", "查看每周备忘": "Browse weekly notes",
+  "本周学到什么，下周要验证什么": "What did you learn, and what will you test next week?",
+  "哪些事实改变了你的判断？有哪些事情值得等待，而不是交易？": "Which facts changed your view? What deserves patience rather than another trade?",
+  "保存备忘": "Save note", "尚未保存": "Not saved yet", "已保存到私人账本": "Saved to your private workspace",
+  "保存失败，内容仍保留在此": "Save failed; your text is still here.", "保存失败，请重试": "Save failed. Please retry.",
+  "把成交记录放进来": "Bring your trade records here",
+  "截图与文字 PDF 在本机识别。候选和文字来源保存到私人收件箱；原文件只在这次浏览器会话中预览。": "Screenshots and text PDFs are read on this device. Candidates and source text are saved privately; original files can only be previewed in this browser session.",
+  "选择截图或结单 PDF": "Choose screenshot or statement PDF",
+  "图片最大 8 MB · PDF 最大 12 MB / 30 页": "Images: up to 8 MB · PDFs: up to 12 MB / 30 pages",
+  "识别并保存候选": "Extract & save candidates", "已保存的文件": "Saved documents",
+  "待确认": "Pending confirmation", "已入账": "Applied", "已撤销": "Undone",
+  "新交易": "New trade", "已存在": "Already recorded", "补充信息": "Enrich record", "存在差异": "Conflict", "待补全": "Incomplete",
+  "同一日期的差异需要逐项确认。未知费用、税费和交收日期会保留为空。": "Review same-date differences individually. Unknown fees, taxes and settlement dates stay blank.",
+  "这份文件已入账，原交易备份已保留。": "This document was applied. Original transaction records are retained for undo.",
+  "这次入账已撤销。": "This import was undone.", "打开本次原文件预览": "Preview original file",
+  "查看提取原文": "Show extracted source text", "待匹配标的": "Unmatched asset",
+  "账本现有": "Existing ledger record", "请选择": "Please select",
+  "交收日期（可空）": "Settlement date (optional)", "费用（无费用请填 0）": "Fee (enter 0 if none)",
+  "税费（无税费请填 0）": "Tax (enter 0 if none)", "截图文字": "Screenshot text",
+  "已核对原文，用这些数字替换上方交易": "I checked the source. Replace the above transaction with these figures.",
+  "保存核对进度": "Save review progress", "勾选表示已对照原文核实数量、成交价和费用。": "Selection confirms you checked quantity, price and fees against the source.",
+  "撤销这次入账": "Undo this import", "选择一份文件开始核对。": "Select a document to begin reviewing.",
+  "核对进度已保存，可以稍后继续。": "Review progress saved. You can continue later.",
+  "候选已保存。请对照原文确认数字，勾选要入账的项目。": "Candidates saved. Verify the figures against the source and select what to apply.",
+  "文字已提取，没有找到明确成交记录。请查看原文并手工录入。": "Text extracted, but no explicit executed trades were found. Check the source and use manual entry.",
+  "已撤销这次入账，原记录已恢复。": "Import undone; original records restored.",
+  "已写入，请刷新页面重新读取账本。": "Saved. Refresh to reload the ledger.",
+  "撤销已成功，请刷新页面重新读取账本。": "Undo succeeded. Refresh to reload the ledger.",
+  "请先保存核对进度，或确认放弃未保存修改。": "Save your review progress first, or confirm discarding unsaved edits.",
+  "备忘还未保存，确认离开并放弃修改？": "Your note is not saved. Leave and discard the changes?",
+  "复盘已保存，请刷新页面重新读取。": "Review saved. Refresh to reload it.",
+  "备忘已保存，请刷新页面重新读取。": "Note saved. Refresh to reload it.",
+  "备忘在其他页面更新过，请刷新核对。你的输入仍保留。": "This note was updated elsewhere. Refresh and compare; your input is still here.",
+  "私人投资操作系统": "Private investment OS", "PRIVATE WORKSPACE": "PRIVATE WORKSPACE",
+  "把持仓、成本、收益与风险放在同一张清晰的地图里。": "See holdings, cost, returns and risk on one clear map.",
+  "每一笔真实成交，都能回到来源与成本。": "Trace every executed trade back to its source and cost.",
+  "记录你为什么买，也记录什么会让你改变判断。": "Record why you bought—and what would change your mind.",
+  "先在这里承受波动，再决定现实里要不要承受。": "Experience the drawdown here before deciding whether to bear it in reality.",
+  "把本周发生的事，沉淀成下一次更好的决定。": "Turn this week’s events into a better next decision.",
+  "所有价格、净值、汇率与更新时间都有迹可循。": "Trace every price, NAV, FX rate and update timestamp.",
+  "切换主题": "Change theme", "退出登录": "Sign out",
+  "等待更多每日快照": "Waiting for more daily snapshots", "个真实快照": "real snapshots",
+  "历史快照 + 当前估值": "Historical snapshot + current valuation",
+  "快速选择交易类型": "Quick transaction type",
+  "PRIVATE INVESTMENT OS": "PRIVATE INVESTMENT OS", "Evidence over emotion": "Evidence over emotion",
+  "看清回报，\n也看清决定。": "See the return.\nUnderstand the decision.",
+  "真实成本": "True cost", "可核对数据": "Auditable data", "私人空间": "Private workspace",
+  "安全访问": "SECURE ACCESS", "欢迎回来": "Welcome back", "输入访问密码，继续进入你的投资工作台。": "Enter your password to continue to your investment workspace.",
+  "组合总览": "Portfolio overview", "组合": "Portfolio", "交易账本": "Transaction ledger", "账本": "Ledger",
+  "投资逻辑": "Investment theses", "逻辑": "Theses", "情景实验室": "Scenario lab", "情景": "Scenarios",
+  "每周备忘": "Weekly memo", "备忘": "Memo", "数据与更新": "Data & updates", "数据": "Data",
+  "投资组合": "Portfolio", "真实交易账本": "Transaction ledger", "情景压力测试": "Scenario stress test",
+  "每周投资备忘": "Weekly investment memo", "数据状态": "Data status", "主要导航": "Primary navigation",
+  "买入": "Buy", "卖出": "Sell", "股息": "Dividend", "股息税": "Dividend tax", "费用": "Fee",
+  "申购": "Subscribe", "赎回": "Redeem", "拆股": "Stock split", "资金转入": "Cash in", "资金转出": "Cash out",
+  "税前股息金额": "Gross dividend", "股息税金额": "Dividend tax", "费用金额": "Fee amount",
+  "转入金额": "Cash-in amount", "转出金额": "Cash-out amount", "确认买入": "Confirm buy",
+  "确认卖出": "Confirm sell", "记录股息": "Record dividend", "记录股息税": "Record dividend tax",
+  "记录费用": "Record fee", "确认申购": "Confirm subscription", "确认赎回": "Confirm redemption",
+  "记录拆股": "Record split", "记录转入": "Record cash in", "记录转出": "Record cash out",
+  "正式收盘": "Official close", "免费实时行情": "Free real-time quote", "延迟行情": "Delayed quote",
+  "基金净值": "Fund NAV", "演示数据": "Demo data", "访客演示空间": "Guest demo workspace",
+  "退出": "Sign out", "显示货币": "Display currency", "主题": "Theme", "跟随系统": "System",
+  "浅色": "Light", "深色": "Dark", "更新中": "Refreshing", "刷新数据": "Refresh data",
+  "看清回报，也看清决定。": "See the return. Understand the decision.",
+  "你的私人投资账本、复盘系统和压力测试实验室。": "Your private investment ledger, review system and stress-testing lab.",
+  "访问密码": "Access password", "正在验证": "Verifying", "进入 Alpha Lab": "Enter Alpha Lab",
+  "服务端验证。不会连接券商，也不会发出交易指令。": "Verified securely on the server. Alpha Lab never connects to your broker or places trades.",
+  "服务端密码尚未配置。请先设置环境变量。": "The server password is not configured yet.",
+  "服务端密码尚未配置": "The server password is not configured", "尝试次数过多，请十分钟后再试": "Too many attempts. Try again in ten minutes.",
+  "密码错误": "Incorrect password", "暂时无法登录": "Unable to sign in right now", "登录失败": "Sign-in failed",
+  "关闭提示": "Dismiss notice", "关闭": "Dismiss", "持仓市值": "Market value", "净投入": "Net contributions",
+  "账本持仓成本": "Book cost", "账本现金": "Book cash", "现金余额": "Cash balance", "未追踪": "Not tracked", "部分追踪": "Partially tracked", "已实现收益": "Realized P&L",
+  "未实现收益": "Unrealized P&L", "股息收入": "Dividend income", "手续费和税费": "Fees & taxes",
+  "汇率损益": "FX impact", "缺少数据": "Missing data", "缺少": "Missing", "缺少价格": "Price missing",
+  "缺少估值日期": "Valuation date missing", "估值不完整": "Incomplete valuation", "账本有待核对项": "Ledger needs review",
+  "账本现金为负": "Negative book cash", "现金余额为负": "Negative cash balance", "账户净值": "Portfolio value", "今日价格影响（估算）": "Today's price impact (est.)",
+  "累计损益": "Cumulative P&L", "净投入回报（非年化）": "Return on net contributions (not annualized)",
+  "组合关键指标": "Key portfolio metrics", "持仓": "Holdings", "成本口径": "Cost method",
+  "加权平均": "Weighted average", "标的": "Asset", "数量": "Quantity", "当前价格": "Current price",
+  "持仓成本": "Holding cost", "市值": "Market value", "今日价格影响": "Today's price impact",
+  "持有损益": "Holding P&L", "杠杆 ETF": "Leveraged ETF", "无日期": "No date", "价格来源": "Price source",
+  "未记录数据源": "Source not recorded", "无获取时间": "No fetch time", "数据源标记为延迟": "Source marked delayed",
+  "数据源未标记延迟": "Source not marked delayed", "份": "units", "股": "shares", "含待核对交易": "Includes unverified trades",
+  "收益拆解": "Return breakdown", "已实现、未实现、股息、费用与汇率影响": "Realized, unrealized, dividends, fees and FX impact",
+  "集中度": "Concentration", "按标的": "By asset", "更多组合分析": "More portfolio analytics",
+  "账户、资产类型与历史快照": "Accounts, asset types and history", "按账户": "By account",
+  "按资产类型": "By asset type", "按行业": "By sector", "最近快照": "Recent snapshots", "日期": "Date",
+  "本金": "Contributions", "状态": "Status", "缺少汇率": "FX rate missing", "尚无每日组合快照。": "No daily portfolio snapshots yet.",
+  "记录一笔交易": "Record a transaction", "修改交易": "Edit transaction", "交易类型": "Transaction type",
+  "账户": "Account", "请核对账户": "Confirm account", "请匹配标的": "Match asset", "请先导入资产": "Import an asset first", "成交日期（以券商为准）": "Trade date (per broker record)",
+  "份额": "Units", "例如 1": "e.g. 1", "成交净值": "Execution NAV", "成交价": "Execution price",
+  "以结单为准": "Use the broker statement", "金额": "Amount", "请输入实际金额": "Enter the actual amount",
+  "拆股倍数": "Split ratio", "例如 3 表示 1 拆 3": "e.g. 3 means a 3-for-1 split", "交易币种": "Trade currency",
+  "不要用今天汇率代替": "Do not substitute today's FX rate", "只填结单所用或可核实的成交日汇率": "Use the statement FX rate or a verifiable trade-date rate",
+  "发现重复": "Duplicate found", "将记录": "To be recorded", "待选择日期": "Select a date", "待选择账户": "Select an account",
+  "费用与更多信息": "Fees & details", "手续费、税费、结算与备注": "Fees, taxes, settlement and notes",
+  "手续费": "Fee", "税费": "Tax", "结算日期": "Settlement date", "来源": "Source", "备注": "Notes",
+  "选填：订单号、费用说明或其他核对线索": "Optional: order ID, fee details or reconciliation notes",
+  "已核对原始成交记录": "Verified against the original trade record",
+  "数量、成交价和费用都与券商或基金平台记录一致时再勾选": "Check only after quantity, price and fees match the broker or fund record",
+  "取消编辑": "Cancel edit", "保存中": "Saving", "保存修改": "Save changes", "正式账本": "Official ledger",
+  "搜索账本": "Search ledger", "搜索标的、来源或备注": "Search asset, source or notes", "筛选交易类型": "Filter transaction type",
+  "全部类型": "All types", "成交日期": "Trade date", "类型": "Type", "单价": "Unit price", "费用和税": "Fees & taxes",
+  "核对": "Verification", "操作": "Actions", "现金": "Cash", "未知账户": "Unknown account", "已核对": "Verified",
+  "待核对": "Needs review", "编辑": "Edit", "删除": "Delete", "没有符合当前筛选的交易。": "No transactions match the current filters.",
+  "导入批次": "Import batches", "删除批次": "Delete batch", "导入、导出与备份": "Import, export & backup",
+  "从 CSV 建立第一份账本": "Create your first ledger from CSV", "选择 CSV": "Choose CSV", "导入中": "Importing",
+  "导入账本": "Import ledger", "下载模板": "Download template", "导出 CSV": "Export CSV", "完整 JSON 备份": "Full JSON backup",
+  "选择备份": "Choose backup", "恢复": "Restore", "记录原始判断": "Record the original thesis", "决策类型": "Decision type",
+  "投资": "Investment", "交易": "Trade", "任务性交易": "Tactical trade", "观察": "Watch", "建立日期": "Start date",
+  "预期持有期限": "Expected holding period", "例如 3 到 5 年": "e.g. 3 to 5 years", "最大可接受亏损": "Maximum acceptable loss",
+  "以小数或金额记录": "Enter a percentage or amount", "计划仓位": "Target weight", "例如 0.08": "e.g. 0.08",
+  "信心等级": "Confidence", "当前状态": "Current status", "买入或观察理由": "Buy / watch rationale",
+  "市场可能低估的因素": "What the market may be underpricing", "关键催化剂": "Key catalysts", "主要风险": "Key risks",
+  "Thesis 失效条件": "Thesis invalidation conditions", "信息来源": "Sources", "保存原始判断": "Save original thesis",
+  "Thesis 档案": "Thesis archive", "原始理由": "Original rationale", "失效条件": "Invalidation conditions",
+  "追加 revision": "Add revision", "当前判断": "Current view", "追加，不覆盖": "Append without overwriting",
+  "调整冲击假设": "Set shock assumptions", "QQQ 变化": "QQQ change", "半导体板块": "Semiconductors",
+  "USD/CNY 变化": "USD/CNY change", "USD/HKD 变化": "USD/HKD change", "EUR/USD 变化": "EUR/USD change",
+  "追加资金，USD": "Additional cash, USD", "清空假设": "Reset assumptions", "组合影响": "Portfolio impact",
+  "情景后组合价值": "Post-scenario portfolio value", "情景前": "Before scenario", "恢复所需上涨": "Recovery required",
+  "打印或保存 PDF": "Print or save PDF", "当前组合": "Current portfolio", "本周组合变化": "Portfolio change this week",
+  "收益来源": "Sources of return", "主要持仓": "Largest holding", "Thesis 状态": "Thesis status", "最大风险": "Largest risk",
+  "数据与账目": "Data & ledger", "最近成功更新": "Last successful update", "尚未成功执行": "No successful run yet",
+  "暂无更新记录": "No update history", "立即刷新": "Refresh now", "数据来源": "Data sources", "启用": "Enabled", "停用": "Disabled",
+  "最近成功": "Last success", "尚无": "None yet", "最近错误": "Last error", "无": "None", "确认基金 NAV": "Confirm fund NAV",
+  "基金": "Fund", "净值日期": "NAV date", "确认并写入": "Confirm and save", "价格审计": "Price audit",
+  "价格日期": "Price date", "报价时间": "Quote time", "数据属性": "Data quality", "延迟": "Delayed", "是": "Yes",
+  "否或未标记": "No / not flagged", "基准收盘": "Benchmark closes", "汇率记录": "FX records", "免费调度方案": "Free scheduling",
+  "未更新": "Not updated", "部分更新": "Partially updated", "数据过期": "Data stale", "数据已更新": "Data current",
+  "等待首次真实写入": "Waiting for first real write", "无数据": "No data", "手工录入": "Manual entry",
+  "NVDA 财报不及预期": "NVDA earnings miss", "AI 与半导体回调": "AI & semiconductor pullback",
+  "Nasdaq 熊市": "Nasdaq bear market", "软着陆与降息": "Soft landing & rate cuts", "美元走弱": "Weaker US dollar",
+  "全球股票组合（演示）": "Global equity portfolio (demo)", "科技成长组合（演示）": "Technology growth portfolio (demo)",
+  "访客演示账户": "Guest demo account", "明确标注的访客演示数据": "Clearly labeled guest demo data",
+  "这是独立的访客演示空间；预置内容均为明确标注的示例数据，不是任何人的真实持仓。": "This is an isolated guest workspace. All preloaded records are clearly labeled examples—not anyone's real holdings.",
+  "先建立真实账本": "Build your ledger first", "导入结单 CSV 或录入第一笔交易后，这里才会计算持仓、成本和收益。系统不会放入演示持仓。": "Import a broker CSV or record your first trade to calculate holdings, cost and returns. The system never presents demo holdings as real data.",
+  "打开交易账本": "Open transaction ledger", "成本包含已计入账本的手续费和税费；待核对成交会明确标记。": "Cost includes fees and taxes recorded in the ledger. Unverified trades are clearly flagged.",
+  "按账户净值计算；负现金可能使持仓权重合计超过 100%。": "Calculated against account value; negative cash can make holding weights exceed 100% in total.",
+  "只记录已成交；未成交和已撤销订单不用录。系统会自动检查重复。": "Record executed trades only. Open and cancelled orders stay out; duplicates are detected automatically.",
+  "SMART CAPTURE": "SMART CAPTURE", "上传成交截图，自动填表": "Upload a trade screenshot to prefill the form",
+  "图片只在你的浏览器内识别，不上传、不保存、无需 API key。结果必须由你核对，重复成交仍会被拦截。": "Recognition runs entirely in your browser. Images are never uploaded or stored, and no API key is needed. Review every result; duplicates remain blocked.",
+  "选择交易截图": "Choose trade screenshot", "JPEG、PNG 或 WebP · 最大 8 MB": "JPEG, PNG or WebP · 8 MB max",
+  "识别交易": "Recognize trades", "核对并填入": "Review and prefill",
+  "首次使用会下载中英文字库，通常需要几秒；模糊字段会留给你确认，不会自动入账。": "The first run downloads English and Chinese OCR data and may take a few seconds. Ambiguous fields stay blank for your review and are never posted automatically.",
+  "未匹配标的": "Unmatched asset", "日期待确认": "Date to confirm", "数量待确认": "Quantity to confirm", "价格待确认": "Price to confirm", "账户待确认": "Account to confirm",
+  "现金未追踪": "Cash not tracked", "现金部分追踪": "Cash partially tracked",
+  "只记录成交时，Alpha Lab 不会再凭空推算负现金；组合净值按可估值持仓计算。": "When only trades are recorded, Alpha Lab no longer invents a negative cash balance; portfolio value uses the holdings that can be valued.",
+  "按当前可估值资产计算；现金只在账本存在明确转入、转出记录时计入。": "Calculated from currently valued assets; cash is included only when explicit transfers exist in the ledger.",
+  "尚无账户。先用 CSV 模板导入第一批真实记录，账户与资产会一并建立。": "No account yet. Import the CSV template to create the first account and assets.",
+  "这笔成交已在账本中，不会重复写入。": "This trade already exists and will not be recorded twice.",
+  "先写下当时真正相信的理由。系统保存 revision，不会用后见之明覆盖旧版本。": "Capture what you genuinely believed at the time. Revisions are appended, never rewritten with hindsight.",
+  "先导入至少一个真实资产，才能建立投资逻辑。": "Import at least one asset before recording an investment thesis.",
+  "还没有 thesis。记录第一条时，系统会同时安排复盘日期。": "No thesis yet. Recording one also creates review dates.",
+  "所有数字都是用户设定的情景，不是预测，也不会写回正式账本。": "Every input is a user-defined scenario—not a forecast—and never alters the official ledger.",
+  "杠杆 ETF 只使用清楚标注的单日近似，不制造长期路径精度。": "Leveraged ETFs use a clearly labeled one-day approximation; the tool does not invent long-term path precision.",
+  "需要完整持仓、价格和汇率后才能运行情景。": "Complete holdings, prices and FX rates are required to run a scenario.",
+  "可从历史快照核对组合与本金变化。": "Portfolio value and contributions can be reconciled from historical snapshots.",
+  "暂无足够的周初和周末快照，不能虚构周度变动。": "There are not enough opening and closing snapshots to calculate a weekly change reliably.",
+  "缺少可计算数据。": "Insufficient data to calculate.", "尚无持仓。": "No holdings yet.",
+  "最近七天没有已记录的 thesis 变化。": "No thesis changes were recorded in the last seven days.",
+  "当前数据未触发单一持仓超过 25% 的提示。": "No single holding currently exceeds the 25% concentration threshold.",
+  "这是个人记录与分析，不构成投资建议，也不会鼓励为了互动而交易。": "This is a record-keeping and analysis tool, not investment advice or an engagement-driven trading prompt.",
+  "行情、基金净值和汇率分开记录。没有新数据时保留最近有效值，并显示原始日期。": "Market prices, fund NAVs and FX rates are tracked separately. When no new value exists, the latest valid value and its original date remain visible.",
+  "只有人工确认的净值会进入正式数据库。请同时保留基金公布的原始净值日期。": "Only user-confirmed NAVs enter the official database. Always preserve the fund's original NAV date.",
+  "账本中还没有基金资产。导入基金申购记录后可在此维护 NAV。": "No fund asset exists in the ledger. Import a subscription record to maintain its NAV here.",
+  "页面展示的是每项当前持仓实际采用的价格，而不是请求时间伪装出的今日价格。": "The audit shows the price actually used for each holding—not a request timestamp disguised as today's price.",
+  "尚无可审计的持仓价格。": "No holding prices are available for audit.",
+  "QQQ 与 SPY 只保存最近正式收盘，不把下午盘中报价伪装成收盘数据。": "QQQ and SPY retain official closes only; intraday quotes are never presented as closing data.",
+  "尚无基准记录。上午更新成功后会写入 QQQ 与 SPY。": "No benchmark records yet. A successful morning update will add QQQ and SPY.",
+  "Frankfurter 使用 ECB 最近公布的工作日参考汇率，不伪装成盘中外汇报价。": "Frankfurter uses the ECB's latest published working-day reference rates, not intraday FX quotes.",
+  "尚无汇率。点击刷新后会先尝试无需 key 的 ECB 数据源。": "No FX rates yet. Refresh first tries the key-free ECB source.",
+  "GitHub Actions 每天覆盖 Rome 09:15 与 18:15。即使任务延迟到达，系统也会补跑当天尚未完成的时段，并自动避免重复更新。": "GitHub Actions covers 09:15 and 18:15 Rome time each day. Delayed jobs backfill any missing daily session and automatically avoid duplicate updates.",
+  "关于项目": "About the project", "关于": "About", "关于 Alpha Lab": "About Alpha Lab",
+  "独立演示空间": "Isolated demo workspace", "示例数据与你的操作只存在于当前访客空间，不是任何人的真实持仓。": "Example data and your changes stay inside this guest workspace. Nothing shown is anyone's real portfolio.",
+  "使用指南": "Guide", "重置演示": "Reset demo", "重置中": "Resetting",
+  "从一笔交易，到一套可核对的投资决策。": "From one trade to an investment process you can audit.",
+  "体验真实成本、收益归因、价格审计与投资逻辑。所有预置记录都明确标注为演示数据。": "Explore true cost basis, return attribution, price provenance and investment theses. Every preloaded record is explicitly labeled as demo data.",
+  "查看组合": "Review the portfolio", "先看成本、收益和价格时间。": "Start with cost, returns and price timestamps.",
+  "试录交易": "Try recording a trade", "重复成交会自动拦截。": "Duplicate trades are blocked automatically.",
+  "运行情景": "Run a scenario", "改变假设，不改正式账本。": "Change assumptions without changing the ledger.",
+  "开始体验": "Explore the demo", "直接试录交易": "Record a trade",
+  "组合轨迹": "Portfolio trajectory", "每日快照写入后，这里会形成可核对的历史曲线。": "A traceable history appears here after daily snapshots are saved.",
+  "较上一快照": "vs previous snapshot", "首个快照": "First snapshot", "拖动或点击查看每日变化": "Drag or tap for daily change",
+  "可拖动查看每日组合净值与涨跌": "Interactive daily portfolio value and change chart",
+  "组合历史价值曲线": "Historical portfolio value chart", "数据健康概览": "Data health overview",
+  "快速录入": "Quick entry", "你做了什么交易？": "What did you trade?", "选择动作后，只需完成三步。高级字段默认收起。": "Choose an action, then complete three focused steps. Advanced fields stay out of the way.",
+  "其他交易": "Other transaction", "交易录入步骤": "Transaction entry steps", "选择交易": "Choose transaction",
+  "填写成交": "Enter execution", "核对保存": "Review & save", "先确认方向、账户与标的。": "Confirm the direction, account and asset.",
+  "下一步：填写成交": "Next: execution details", "使用券商或基金平台上的实际数字。": "Use the actual figures from your broker or fund platform.",
+  "下一步：核对": "Next: review", "核对并保存": "Review and save", "保存前再看一眼关键信息。": "Check the key details once more before saving.",
+  "返回": "Back", "返回修改": "Back to edit", "取消": "Cancel",
+  "持仓定价": "Holdings priced", "有可审计价格的当前持仓": "Current holdings with an auditable price", "待处理问题": "Issues to review",
+  "数据源最近错误": "Recent data-source errors", "当前可用货币对": "Currently available currency pairs",
+  "查看数据来源": "View data sources", "行情、基金净值与汇率的完整状态": "Full status for prices, fund NAVs and FX rates",
+  "演示空间已恢复，可以重新体验所有功能": "The demo workspace has been restored.",
+  "无法重置演示空间": "Unable to reset the demo workspace",
+  "重置会清除你在当前访客空间的修改，并恢复演示数据。继续？": "Resetting removes your changes in this guest workspace and restores the demo data. Continue?",
+  "确认删除这笔交易？此操作会改变成本和收益计算。": "Delete this transaction? Cost basis and return calculations will change.",
+  "导入 CSV 会替换当前演示数据，并建立你的独立账本。继续？": "Importing this CSV replaces the demo data and creates your isolated ledger. Continue?",
+  "恢复会替换当前 Alpha Lab 数据。确认继续？": "Restoring replaces the current Alpha Lab data. Continue?",
+  "确认删除整个导入批次？": "Delete this entire import batch?",
+  "一个为证据而生，而不是为情绪而生的投资工作台。": "An investment workspace built for evidence, not excitement.",
+  "Alpha Lab 把交易账本、组合计算、价格来源和原始投资逻辑连接起来，让每个数字可追溯、每个决策可复盘。": "Alpha Lab connects the transaction ledger, portfolio math, price provenance and the original investment thesis—so every number can be traced and every decision can be reviewed.",
+  "从设计开始即可核对": "Auditable by design", "账户级数据隔离": "Private by account", "不做 AI 荐股": "No AI stock picks",
+  "账本优先的核算": "Ledger-first accounting", "加权平均与 FIFO 成本、费用、税费、现金流、基金、拆股和重复交易保护，全部以原始交易记录为起点。": "Weighted-average and FIFO cost basis, fees, taxes, cash flows, funds, splits and duplicate-trade protection all begin with the underlying transaction record.",
+  "诚实的行情数据": "Honest market data", "价格日期、报价时间、来源和延迟状态始终可见。缺失数据保持缺失，请求时间不会伪装成今日价格。": "Price date, quote time, provider and delay status remain visible. Missing data stays missing; a request timestamp never masquerades as today’s price.",
+  "决策质量": "Decision quality", "版本化投资逻辑和情景测试把原始判断与后见之明分开，也不会把预测写进正式账本。": "Versioned investment theses and scenario tests separate the original reasoning from hindsight and keep forecasts out of the official ledger.",
+  "生产级架构": "Production architecture", "React 与 Vinext 运行于 Cloudflare Worker，并采用账户隔离的 D1 持久化、签名访客会话和确定性的金融计算测试。": "React and Vinext run on a Cloudflare Worker with owner-scoped D1 persistence, signed guest sessions and deterministic financial-calculation tests.",
+  "Public Beta 边界": "Public Beta boundary", "此演示不会执行交易，也不提供个性化投资建议。匿名访客获得隔离的示例数据，并可随时重置空间。": "This demo does not execute trades or provide personalized investment advice. Anonymous visitors receive isolated example data and may reset the workspace at any time.",
+};
+
 const chineseByEnglish = Object.fromEntries(Object.entries(englishByChinese).map(([zh, en]) => [en, zh]));
 const attributes = ["aria-label", "title", "placeholder", "data-label"];
 
 export function installTranslations(language: Language) {
   const translate = (value: string) => translateText(value, language);
   const apply = (root: Node) => {
+    const element = root instanceof Element ? root : root.parentElement;
+    if (element?.closest("[data-no-translate]")) return;
     if (root.nodeType === Node.TEXT_NODE) {
       const value = root.nodeValue ?? "";
       const next = translate(value);
@@ -232,6 +517,8 @@ export function installTranslations(language: Language) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
     let node: Node | null;
     while ((node = walker.nextNode())) {
+      const element = node instanceof Element ? node : node.parentElement;
+      if (element?.closest("[data-no-translate]")) continue;
       if (node.nodeType === Node.TEXT_NODE) {
         const value = node.nodeValue ?? "";
         const next = translate(value);
@@ -260,27 +547,65 @@ export function translateText(value: string, language: Language) {
   return language === "en" ? toEnglish(value) : toChinese(value);
 }
 
+export function confirmUi(message: string) {
+  return window.confirm(translateText(message, document.documentElement.lang.startsWith("zh") ? "zh" : "en"));
+}
+
 function toEnglish(value: string) {
   return translateExact(value, englishByChinese)
+    .replace(/^累计收益 (.+)，今日收益 (.+)$/, "Cumulative P&L $1 · Today's price impact $2")
+    .replace(/^本周损益 (.+) · 净投入变化 (.+) · 比较 (\S+) 至 (\S+)$/, "Weekly P&L $1 · Net contribution change $2 · $3 to $4")
+    .replace(/^已实现 (.+)，未实现 (.+)，股息 (.+)，汇率影响 (.+)。$/, "Realized $1 · Unrealized $2 · Dividends $3 · FX impact $4.")
+    .replace(/^(\S+) 为当前最大持仓，占组合 (.+)。$/, "$1 is the largest holding at $2 of the portfolio.")
+    .replace(/^(\S+) 集中度超过 25%，需要人工判断是否符合风险预算。$/, "$1 exceeds 25% concentration. Review whether this fits your risk budget.")
+    .replace(/^最近七天有 (\d+) 条 thesis revision。$/, "$1 thesis revisions recorded in the last seven days.")
+    .replace(/(\d{4})年(\d{1,2})月(\d{1,2})日/g, "$3/$2/$1")
+    .replace(/(\d{1,2})月(\d{1,2})日/g, "$2/$1")
     .replace(/(\d+) 项持仓缺少价格或汇率/g, "$1 holdings are missing a price or FX rate")
     .replace(/(\d+) 笔交易待核对/g, "$1 transactions need review")
     .replace(/(\d+) 笔记录，按成交日期倒序。资金转入不会被计入投资收益。/g, "$1 records, newest first. Cash deposits are excluded from investment returns.")
     .replace(/(\d+) 条逻辑记录。短期涨跌不会自动决定 thesis 对错。/g, "$1 thesis records. Short-term price moves do not automatically validate a thesis.")
+    .replace(/(\d+) 个真实快照/g, "$1 real snapshots")
     .replace(/查看 (\d+) 个 revision/g, "View $1 revisions")
     .replace(/最近运行 ([A-Z]+)，(\d+) 成功，(\d+) 失败/g, "Latest run: $1 · $2 succeeded · $3 failed")
     .replace(/均价 ([^/]+) \/ 股/g, "Avg. $1 / share")
     .replace(/均价 ([^/]+) \/ 份/g, "Avg. $1 / unit")
+    .replace(/均价 ([^/]+) \/ (shares|units)/g, "Avg. $1 / $2")
+    .replace(/ · 展开/g, " · Expand")
     .replace(/报价 (.+)/g, "Quoted $1")
     .replace(/获取 (.+)/g, "Fetched $1")
-    .replace(/比较基准 (.+)/g, "Reference $1");
+    .replace(/比较基准 (.+)/g, "Reference $1")
+    .replace(/(\d+) 个历史估值日/g, "$1 historical valuation dates")
+    .replace(/(\d+) 次复盘已到期/g, "$1 reviews due")
+    .replace(/待复盘 · (\d+)/g, "Due · $1")
+    .replace(/(\d+) 天复盘/g, "$1-day review")
+    .replace(/(\d+) 笔交易 · (\d+) 个判断版本/g, "$1 transactions · $2 thesis versions")
+    .replace(/处理文件 (\d+)%/g, "Processing $1%")
+    .replace(/确认处理 (\d+) 笔/g, "Confirm $1 records")
+    .replace(/较 (\d+) 天前 · 非单日涨跌/g, "vs $1 days ago · not a daily return")
+    .replace(/此笔来源 · (.+)/g, "Source · $1")
+    .replace(/成交价 · (\w+)/g, "Execution price · $1")
+    .replace(/税前股息金额 · (\w+)/g, "Gross dividend · $1")
+    .replace(/交易日 1 单位币种兑 USD/g, "Trade-date FX to USD")
+    .replace(/已保存 (\d{4}-\d{2}-\d{2})/g, "Saved $1")
+    .replace(/(\d+) 笔已处理，(\d+) 笔相同记录已跳过。/g, "$1 records processed; $2 identical records skipped.")
+    .replace(/(\d+) 笔记录，按成交日期倒序。资金转入转出只作审计留痕，不参与组合估值或收益。/g, "$1 records, newest first. Cash transfers are audit-only and excluded from valuations and returns.");
 }
 
 function toChinese(value: string) {
   return translateExact(value, chineseByEnglish)
+    .replace(/^Cumulative P&L (.+) · Today's price impact (.+)$/, "累计收益 $1，今日收益 $2")
+    .replace(/^Weekly P&L (.+) · Net contribution change (.+) · (\S+) to (\S+)$/, "本周损益 $1 · 净投入变化 $2 · 比较 $3 至 $4")
+    .replace(/^Realized (.+) · Unrealized (.+) · Dividends (.+) · FX impact (.+)\.$/, "已实现 $1，未实现 $2，股息 $3，汇率影响 $4。")
+    .replace(/^(\S+) is the largest holding at (.+) of the portfolio\.$/, "$1 为当前最大持仓，占组合 $2。")
+    .replace(/^(\S+) exceeds 25% concentration\. Review whether this fits your risk budget\.$/, "$1 集中度超过 25%，需要人工判断是否符合风险预算。")
+    .replace(/^(\d+) thesis revisions recorded in the last seven days\.$/, "最近七天有 $1 条 thesis revision。")
+    .replace(/(\d{1,2})\/(\d{1,2})\/(\d{4})/g, "$3年$2月$1日")
     .replace(/(\d+) holdings are missing a price or FX rate/g, "$1 项持仓缺少价格或汇率")
     .replace(/(\d+) transactions need review/g, "$1 笔交易待核对")
     .replace(/(\d+) records, newest first\. Cash deposits are excluded from investment returns\./g, "$1 笔记录，按成交日期倒序。资金转入不会被计入投资收益。")
     .replace(/(\d+) thesis records\. Short-term price moves do not automatically validate a thesis\./g, "$1 条逻辑记录。短期涨跌不会自动决定 thesis 对错。")
+    .replace(/(\d+) real snapshots/g, "$1 个真实快照")
     .replace(/View (\d+) revisions/g, "查看 $1 个 revision")
     .replace(/Latest run: ([A-Z]+) · (\d+) succeeded · (\d+) failed/g, "最近运行 $1，$2 成功，$3 失败")
     .replace(/Avg\. ([^/]+) \/ share/g, "均价 $1 / 股")

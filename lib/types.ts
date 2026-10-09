@@ -84,11 +84,13 @@ export type FxSnapshot = {
 
 export type PortfolioHistoryPoint = {
   date: string;
-  portfolio: number;
+  portfolio: number | null;
   contributions: number;
   qqq: number | null;
   spy: number | null;
   status: string;
+  missingAssetIds?: string[];
+  priceDates?: Record<string, string>;
 };
 
 export type BenchmarkSnapshot = {
@@ -159,6 +161,21 @@ export type ImportBatchSummary = {
   createdAt: string;
 };
 
+export type DecisionReview = {
+  id: string;
+  thesisId: string;
+  dueAt: string;
+  horizonDays: number;
+  expectation: string;
+  actual: string;
+  assessment: string;
+  sizing: string;
+  lesson: string;
+  completedAt: string | null;
+};
+
+export type WeeklyNote = { week: string; text: string; updatedAt: string };
+
 export type LabData = {
   accounts: Account[];
   assets: Asset[];
@@ -174,4 +191,6 @@ export type LabData = {
   lastSuccessfulUpdateAt: string | null;
   demoMode: boolean;
   generatedAt: string;
+  reviews?: DecisionReview[];
+  weeklyNotes?: WeeklyNote[];
 };

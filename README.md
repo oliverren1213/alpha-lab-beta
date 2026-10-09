@@ -1,7 +1,7 @@
 # Alpha Lab Beta
 
 [![Beta](https://img.shields.io/badge/status-public_beta-0A84FF)](https://alpha-lab-beta.kv2dz8h2bw.chatgpt.site)
-[![Tests](https://img.shields.io/badge/deterministic_tests-23_passed-30D158)](#validation)
+[![Tests](https://img.shields.io/badge/deterministic_tests-53_passed-30D158)](#validation)
 
 [Open the live Beta](https://alpha-lab-beta.kv2dz8h2bw.chatgpt.site)
 
@@ -29,6 +29,11 @@ Most retail portfolio dashboards show a number without showing its provenance. A
 - Responsive light/dark Apple-inspired interface
 - English/Chinese interface, guided three-step trade entry, resettable guest demo, and project case-study view
 - Free browser-local OCR for screenshot-assisted trade entry; images stay on-device and every candidate requires human review
+- Local PDF text extraction/OCR, a persistent transaction inbox, conflict previews, statement fee corrections, and guarded import undo
+- Draggable glass navigation, scroll-aware mobile chrome, Gay/MLM and other Pride palettes, and reduced-motion support
+- Interactive historical charts with valuation gaps, transaction markers, date inspection and cash-flow-adjusted period P&L
+- Decision reviews and editable weekly notes with ledger-backed draft generation
+- A public-source daily brief with at most two highlights and a seven-day economic calendar
 
 ## Privacy and data integrity
 
@@ -36,7 +41,7 @@ Most retail portfolio dashboards show a number without showing its provenance. A
 - Accounts, transactions, imports, portfolio snapshots, fund NAVs, and theses are scoped by a stable per-Site user ID.
 - Public market prices and ECB reference FX rates may be shared; private portfolio records are never shared.
 - The repository contains no credentials, personal holdings, or production database exports.
-- Missing prices remain missing. The application does not generate mock or random market data.
+- Real-mode missing prices remain missing. The anonymous demo uses explicit, persisted simulation marks; these are never presented as live market prices.
 - Duplicate trades are rejected using account, asset, direction, trade date, quantity, and execution price.
 
 ## Data-source policy
@@ -75,7 +80,7 @@ Core implementation areas:
 
 ## Validation
 
-The Beta currently includes 23 deterministic tests covering:
+The Beta currently includes 53 deterministic tests covering:
 
 - weighted average and FIFO;
 - partial sale, full exit and re-entry;
@@ -85,6 +90,9 @@ The Beta currently includes 23 deterministic tests covering:
 - missing-price behavior and morning/afternoon comparison rules;
 - Rome daylight-saving schedules and the 90-minute stale threshold;
 - market holidays, provider retries, CSV round trips, duplicate fingerprints, and transaction previews.
+- tenant isolation, idempotent inbox confirmation, atomic conflict rejection, statement corrections and undo;
+- historical-chart gaps, date inspection, touch handling and scroll-aware navigation;
+- source persistence, stale-data retention, official calendar parsing, refresh leases and seven-day boundaries.
 
 Run locally:
 

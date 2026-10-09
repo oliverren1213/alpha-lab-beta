@@ -12,6 +12,18 @@ export function scheduledRomeMode(now = new Date(), toleranceMinutes = 35): Refr
   return null;
 }
 
+export function dueScheduledRomeModes(
+  now = new Date(),
+  completed: Iterable<RefreshMode> = [],
+): RefreshMode[] {
+  const minutes = minutesInRome(now);
+  const done = new Set(completed);
+  const due: RefreshMode[] = [];
+  if (minutes >= 9 * 60 + 15 && !done.has("MORNING")) due.push("MORNING");
+  if (minutes >= 18 * 60 + 15 && !done.has("AFTERNOON")) due.push("AFTERNOON");
+  return due;
+}
+
 export function dateInRome(now = new Date()) {
   const values = Object.fromEntries(
     new Intl.DateTimeFormat("en-CA", {

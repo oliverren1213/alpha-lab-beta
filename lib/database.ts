@@ -1,3 +1,6 @@
+import { rebuildHistory } from "./history";
+import { dateInRome } from "./schedule";
+import { withFeeStatus, type FeeStatus } from "./fee-status";
 import { env } from "cloudflare:workers";
 import type {
   Account,
@@ -252,6 +255,8 @@ export async function loadLabData(ownerId: string): Promise<LabData> {
     sourcesRaw,
     importsRaw,
     updateRaw,
+    reviewsRaw,
+    notesRaw,
   ] =
     await Promise.all([
       all(database, "SELECT * FROM accounts WHERE owner_id=? ORDER BY created_at", [ownerId]),
@@ -283,23 +288,15 @@ export async function loadLabData(ownerId: string): Promise<LabData> {
       all(database, "SELECT * FROM data_sources ORDER BY kind, provider"),
       all(database, "SELECT * FROM import_batches WHERE owner_id=? ORDER BY created_at DESC", [ownerId]),
       database.prepare("SELECT * FROM update_runs ORDER BY started_at DESC LIMIT 1").first<Record<string, unknown>>(),
+      all(database, "SELECT r.* FROM decision_reviews r JOIN theses t ON t.id=r.thesis_id WHERE t.owner_id=? ORDER BY r.due_at", [ownerId]),
+      all(database, "SELECT key,value,updated_at FROM settings WHERE substr(key,1,length(?))=? ORDER BY key DESC", [`weekly-note:${ownerId}:`, `weekly-note:${ownerId}:`]),
     ]);
 
-  const benchmarkByDate = new Map<string, { QQQ?: number; SPY?: number }>();
-  for (const row of benchmarksRaw) {
-    const date = String(row.price_date);
-    const values = benchmarkByDate.get(date) ?? {};
-    values[String(row.symbol) as "QQQ" | "SPY"] = Number(row.close);
-    benchmarkByDate.set(date, values);
-  }
-  const history: PortfolioHistoryPoint[] = historyRaw.map((row) => ({
-    date: String(row.snapshot_date),
-    portfolio: Number(row.total_value),
-    contributions: Number(row.net_contributions),
-    qqq: benchmarkByDate.get(String(row.snapshot_date))?.QQQ ?? null,
-    spy: benchmarkByDate.get(String(row.snapshot_date))?.SPY ?? null,
-    status: String(row.status),
-  }));
+  const history = rebuildHistory({
+    accounts: accountsRaw.map(mapAccount), assets: assetsRaw.map(mapAsset),
+    transactions: transactionsRaw.map(mapTransaction), prices: pricesRaw.map(mapPrice),
+    fxRates: fxRaw.map(mapFx), benchmarks: benchmarksRaw.map(mapBenchmark),
+  }, historyRaw.map(row => String(row.snapshot_date)), dateInRome());
 
   return {
     accounts: accountsRaw.map(mapAccount),
@@ -321,6 +318,8 @@ export async function loadLabData(ownerId: string): Promise<LabData> {
     lastSuccessfulUpdateAt: await latestSuccessfulUpdate(database),
     demoMode: transactionsRaw.length > 0 && transactionsRaw.every((row) => Boolean(row.is_demo)),
     generatedAt: new Date().toISOString(),
+    reviews: reviewsRaw.map((row) => ({ id: String(row.id), thesisId: String(row.thesis_id), dueAt: String(row.due_at), horizonDays: Number(row.horizon_days), expectation: String(row.expectation ?? ""), actual: String(row.actual ?? ""), assessment: String(row.thesis_assessment ?? ""), sizing: String(row.sizing_assessment ?? ""), lesson: String(row.bias ?? ""), completedAt: row.completed_at == null ? null : String(row.completed_at) })),
+    weeklyNotes: notesRaw.map((row) => ({ week: String(row.key).slice(`weekly-note:${ownerId}:`.length), text: String(row.value), updatedAt: String(row.updated_at) })),
   };
 }
 
@@ -338,7 +337,7 @@ export async function ensureGuestDemoData(ownerId: string) {
     return;
   }
   if (existing) {
-    await resetGuestDemoData(ownerId);
+    // Existing imported ledgers survive future demo seed upgrades.
     return;
   }
 
@@ -474,20 +473,38 @@ export async function ensureGuestDemoData(ownerId: string) {
 }
 
 async function ensureGuestDemoHistory(database: D1Database, ownerId: string) {
-  const existing = await database.prepare("SELECT id FROM portfolio_snapshots WHERE owner_id=? LIMIT 1")
-    .bind(ownerId).first<{ id: string }>();
-  if (existing) return;
-  const now = new Date();
-  const values = [30_420, 30_180, 30_760, 31_040, 30_690, 31_380, 31_920, 31_610, 32_440, 33_020, 33_680, 33_528.5];
-  await database.batch(values.map((totalValue, index) => {
-    const date = new Date(now.getTime() - (values.length - 1 - index) * 86_400_000).toISOString().slice(0, 10);
-    return database.prepare(
-      `INSERT OR IGNORE INTO portfolio_snapshots
-       (id,owner_id,snapshot_date,base_currency,total_value,net_contributions,realized_pnl,
-        unrealized_pnl,dividend_income,fee_and_tax,fx_pnl,status,session,created_at,is_demo)
-       VALUES (?,?,?,?,?,?,0,?,0,3.5,0,'DEMO','AFTERNOON',?,1)`,
-    ).bind(id("portfolio"), ownerId, date, "USD", totalValue, 30_000, totalValue - 30_000, now.toISOString());
-  }));
+  const historyKey = `demo-history-v4:${ownerId}`;
+  if (!await database.prepare("SELECT key FROM settings WHERE key=?").bind(historyKey).first()) {
+    const last = await database.prepare("SELECT MAX(price_date) AS day FROM price_snapshots WHERE owner_id=? AND is_demo=1").bind(ownerId).first<{ day: string | null }>();
+    if (last?.day) {
+      // Explicit, fixed simulation marks allow the demo curve to recalculate after edits.
+      const curves = [
+        { asset: "asset-demo-nvda", start: 140, end: 181, prior: 176 },
+        { asset: "asset-demo-googl", start: 200, end: 236, prior: 232 },
+        { asset: "asset-demo-gld", start: 245, end: 263, prior: 260 },
+      ];
+      const stamp = new Date().toISOString();
+      const statements: D1PreparedStatement[] = [];
+      for (let index = 0; index <= 80; index++) {
+        const date = new Date(`${last.day}T12:00:00Z`);
+        date.setUTCDate(date.getUTCDate() - 80 + index);
+        for (const curve of curves) {
+          const value = index === 79 ? curve.prior : curve.start + (curve.end - curve.start) * index / 80;
+          statements.push(database.prepare(`INSERT OR IGNORE INTO price_snapshots
+            (id,owner_id,asset_id,price_date,fetched_at,provider,quoted_at,session,data_quality,is_delayed,price,nav,currency,status,is_demo)
+            VALUES (?,?,?,?,?,'Alpha Lab simulated history · not live',NULL,'MORNING','DEMO',0,?,NULL,'USD','DEMO',1)`)
+            .bind(id("price"),ownerId,curve.asset,date.toISOString().slice(0,10),stamp,value));
+        }
+      }
+      statements.push(database.prepare("INSERT OR IGNORE INTO settings(key,value,updated_at) VALUES(?,'ready',?)").bind(historyKey,stamp));
+      await database.batch(statements);
+    }
+  }
+  await database.prepare(`INSERT OR IGNORE INTO decision_reviews(id,thesis_id,due_at,horizon_days,expectation,confirmed)
+    SELECT 'demo-review:' || t.id,t.id,date(t.opened_at,'+30 days'),30,
+      (SELECT r.buy_reason FROM thesis_revisions r WHERE r.thesis_id=t.id ORDER BY r.revised_at DESC LIMIT 1),0
+    FROM theses t WHERE t.owner_id=? AND NOT EXISTS(SELECT 1 FROM decision_reviews d WHERE d.thesis_id=t.id)`)
+    .bind(ownerId).run();
 }
 
 export async function resetGuestDemoData(ownerId: string) {
@@ -495,6 +512,8 @@ export async function resetGuestDemoData(ownerId: string) {
   await ensureDatabase();
   const database = getDatabase();
   await database.batch([
+    database.prepare("DELETE FROM settings WHERE key=?").bind(`demo-history-v4:${ownerId}`),
+    ...[`inbox:${ownerId}:`, `inbox-apply:${ownerId}:`, `inbox-undo:${ownerId}:`, `weekly-note:${ownerId}:`].map(prefix => database.prepare("DELETE FROM settings WHERE substr(key,1,length(?))=?").bind(prefix,prefix)),
     database.prepare("DELETE FROM decision_reviews WHERE thesis_id IN (SELECT id FROM theses WHERE owner_id=?)").bind(ownerId),
     database.prepare("DELETE FROM thesis_revisions WHERE thesis_id IN (SELECT id FROM theses WHERE owner_id=?)").bind(ownerId),
     database.prepare("DELETE FROM theses WHERE owner_id=?").bind(ownerId),
@@ -541,6 +560,7 @@ export type TransactionInput = {
   importBatchId?: string | null;
   note?: string | null;
   reconciled?: boolean;
+  feeStatus?: FeeStatus;
 };
 
 export class DuplicateTransactionError extends Error {
@@ -563,6 +583,7 @@ export async function insertTransaction(ownerId: string, input: TransactionInput
     .bind(input.accountId, ownerId)
     .first<{ is_demo: number }>();
   if (!account) throw new Error("Account does not exist");
+  await validateOwnedAsset(ownerId,input);
   const duplicateId = await findDuplicateTransaction(ownerId, input);
   if (duplicateId) throw new DuplicateTransactionError(duplicateId);
   await execute(
@@ -586,7 +607,7 @@ export async function insertTransaction(ownerId: string, input: TransactionInput
       input.totalAmount ?? null,
       input.source ?? "Manual",
       input.importBatchId ?? null,
-      input.note ?? null,
+      input.feeStatus ? withFeeStatus(input.note, input.feeStatus) : input.note ?? null,
       input.reconciled ? 1 : 0,
       account.is_demo ? 1 : 0,
       now,
@@ -604,6 +625,7 @@ export async function updateTransaction(ownerId: string, transactionId: string, 
     .bind(input.accountId, ownerId)
     .first<{ id: string }>();
   if (!account) throw new Error("Account does not exist");
+  await validateOwnedAsset(ownerId,input);
   const duplicateId = await findDuplicateTransaction(ownerId, input, transactionId);
   if (duplicateId) throw new DuplicateTransactionError(duplicateId);
   const result = await execute(
@@ -624,7 +646,7 @@ export async function updateTransaction(ownerId: string, transactionId: string, 
       input.fxToBase ?? (input.currency === "USD" ? 1 : null),
       input.totalAmount ?? null,
       input.source ?? "Manual",
-      input.note ?? null,
+      input.feeStatus ? withFeeStatus(input.note, input.feeStatus) : input.note ?? null,
       input.reconciled ? 1 : 0,
       new Date().toISOString(),
       transactionId,
@@ -638,10 +660,22 @@ export async function deleteTransaction(ownerId: string, transactionId: string) 
   await execute("DELETE FROM transactions WHERE id=? AND owner_id=?", [transactionId, ownerId]);
 }
 
-function validateTransactionInput(input: TransactionInput) {
+async function validateOwnedAsset(ownerId: string,input: TransactionInput) {
+  if (!input.assetId) return;
+  const asset = await getDatabase().prepare("SELECT a.currency FROM assets a WHERE a.id=? AND EXISTS(SELECT 1 FROM transactions t WHERE t.asset_id=a.id AND t.owner_id=?)").bind(input.assetId,ownerId).first<{currency:string}>();
+  if (!asset || asset.currency !== input.currency) throw new Error("Choose an asset in this workspace with the matching currency");
+}
+
+export function validateTransactionInput(input: TransactionInput) {
   if (!input.accountId || !input.type || !input.tradedAt || !input.currency) {
     throw new Error("Account, type, trade date and currency are required");
   }
+  if (!["BUY", "SELL", "SUBSCRIPTION", "REDEMPTION", "DIVIDEND", "DIVIDEND_TAX", "FEE", "SPLIT", "CASH_IN", "CASH_OUT"].includes(input.type) || !["USD", "CNY", "HKD", "EUR"].includes(input.currency)) throw new Error("交易类型或币种无效");
+  if (input.feeStatus != null && !["PROVISIONAL","CONFIRMED","STATEMENT"].includes(input.feeStatus)) throw new Error("费用核对状态无效");
+  const date = input.tradedAt.slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || new Date(`${date}T12:00:00Z`).toISOString().slice(0,10) !== date) throw new Error("成交日期无效");
+  if (input.settlementDate && (!/^\d{4}-\d{2}-\d{2}$/.test(input.settlementDate) || new Date(`${input.settlementDate}T12:00:00Z`).toISOString().slice(0,10) !== input.settlementDate)) throw new Error("交收日期无效");
+  if (["BUY", "SELL", "SUBSCRIPTION", "REDEMPTION"].includes(input.type) && (!(Number(input.quantity) > 0) || !(Number(input.unitPrice) > 0))) throw new Error("成交数量和价格必须大于零");
   const assetTypes = ["BUY", "SELL", "SUBSCRIPTION", "REDEMPTION", "DIVIDEND", "SPLIT"];
   if (assetTypes.includes(input.type) && !input.assetId) throw new Error("This transaction requires an asset");
   for (const [label, value] of [
@@ -655,6 +689,7 @@ function validateTransactionInput(input: TransactionInput) {
       throw new Error(`${label} must be a non-negative number`);
     }
   }
+  if (input.fxToBase != null && (!Number.isFinite(input.fxToBase) || input.fxToBase <= 0)) throw new Error("交易汇率必须为有限正数");
   if (input.currency !== "USD" && (input.fxToBase == null || input.fxToBase <= 0)) {
     throw new Error("A positive transaction-date FX-to-USD rate is required for non-USD entries");
   }
@@ -709,7 +744,7 @@ function mapAsset(row: Record<string, unknown>): Asset {
   };
 }
 
-function mapTransaction(row: Record<string, unknown>): LedgerTransaction {
+export function mapTransaction(row: Record<string, unknown>): LedgerTransaction {
   return {
     id: String(row.id), accountId: String(row.account_id),
     assetId: row.asset_id == null ? null : String(row.asset_id),

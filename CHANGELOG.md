@@ -2,6 +2,17 @@
 
 All notable changes to Alpha Lab Beta are documented here.
 
+## 0.3.0-beta.1 — 2026-10-09
+
+- Synchronized the private application's glass navigation, mobile scroll behavior, Pride palettes, interactive charts and workflow improvements.
+- Added browser-local PDF extraction/OCR and a persistent, visitor-scoped transaction inbox with duplicate/conflict checks and atomic undo.
+- Added statement fee status, decision reviews, portfolio explanations and editable weekly notes.
+- Recalculate historical valuations and attribution from each visitor's own ledger and stored marks. Demo marks remain explicitly simulated.
+- Added public-source daily news and a seven-day economic calendar with honest source failures and cache freshness.
+- Preserved English default, the guide on every guest page visit, About, the original public URL and guest isolation.
+- Fixed imported guest ledgers being reset on reopening, and translated confirmation dialogs.
+- Verified 53 deterministic tests and all seven pages at a 390px mobile viewport in dark mode.
+
 ## 0.2.0-beta.1 — 2026-09-10
 
 ### Added

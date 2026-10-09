@@ -3,6 +3,7 @@ import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } fr
 import handler from "vinext/server/app-router-entry";
 import { runDailyUpdate } from "../lib/pipeline";
 import { scheduledRomeMode } from "../lib/schedule";
+import { refreshDailyBrief } from "../lib/daily-brief-store";
 
 interface Env {
   ASSETS: Fetcher;
@@ -47,7 +48,10 @@ const worker = {
 
   scheduled(controller: ScheduledController, _env: Env, ctx: ExecutionContext) {
     const mode = scheduledRomeMode(new Date(controller.scheduledTime));
-    if (mode) ctx.waitUntil(runDailyUpdate("CRON", mode));
+    if (mode) {
+      ctx.waitUntil(runDailyUpdate("CRON", mode));
+      ctx.waitUntil(refreshDailyBrief("CRON"));
+    }
   },
 };
 

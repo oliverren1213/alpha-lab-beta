@@ -65,7 +65,7 @@ export function parseOcrTrades(text: string, accounts: Account[], assets: Asset[
     "本地 OCR 可能误读数字，请对照原图逐项核对",
     ...(!trades.length ? ["没有找到可确认的已成交记录；持仓快照、报价和未成交订单不会录入"] : []),
   ];
-  return { trades: resolveScreenshotTrades(trades, accounts, assets), documentWarnings };
+  return { trades: resolveScreenshotTrades(trades, accounts, assets), documentWarnings, rawText: normalized };
 }
 
 export function validateScreenshotResult(value: unknown): {

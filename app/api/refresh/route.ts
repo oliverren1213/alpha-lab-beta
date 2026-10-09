@@ -6,7 +6,8 @@ import { onDemandRefreshMode } from "../../../lib/schedule";
 export async function POST(request: Request) {
   try {
     assertSameOrigin(request);
-    await requireSession();
+    const user = await requireSession();
+    if (user.isGuest) return NextResponse.json({ skipped: true, reason: "Demo quotes are fixed simulations" });
     const body = (await request.json().catch(() => ({}))) as { trigger?: string };
     const trigger: UpdateTrigger = body.trigger === "STALE_OPEN" ? "STALE_OPEN" : "MANUAL";
     const cooldown = await refreshAllowed(trigger);

@@ -5,8 +5,8 @@ import type {
   Currency,
   FxSnapshot,
   LedgerTransaction,
-  PortfolioHistoryPoint,
   PriceSnapshot,
+  PortfolioHistoryPoint,
 } from "./types";
 
 type Lot = {
@@ -69,6 +69,8 @@ export type PortfolioSummary = {
   realizedPnlUsd: number;
   unrealizedPnlUsd: number | null;
   dividendIncomeUsd: number;
+  netDividendIncomeUsd: number;
+  standaloneExpensesUsd: number;
   withholdingTaxUsd: number;
   feesUsd: number;
   fxPnlUsd: number | null;
@@ -89,6 +91,7 @@ export function portfolioDayChange(points: PortfolioHistoryPoint[], index: numbe
   if (index <= 0 || index >= points.length) return { amount: null, rate: null };
   const previous = points[index - 1];
   const current = points[index];
+  if (previous.portfolio == null || current.portfolio == null) return { amount: null, rate: null };
   const externalFlow = current.contributions - previous.contributions;
   const amount = current.portfolio - previous.portfolio - externalFlow;
   return {
@@ -112,6 +115,8 @@ export function calculatePortfolio(input: {
   const positions = new Map<string, PositionState>();
   let netContributionsUsd = 0;
   let dividendIncomeUsd = 0;
+  let netDividendIncomeUsd = 0;
+  let standaloneExpensesUsd = 0;
   let withholdingTaxUsd = 0;
   let feesUsd = 0;
   let realizedPnlUsd = 0;
@@ -136,6 +141,7 @@ export function calculatePortfolio(input: {
       feesUsd += feeBase;
       withholdingTaxUsd += taxBase;
       dividendIncomeUsd += gross;
+      netDividendIncomeUsd += gross - feeBase - taxBase;
       netContributionsUsd -= gross - feeBase - taxBase;
       continue;
     }
@@ -143,6 +149,7 @@ export function calculatePortfolio(input: {
     if (transaction.type === "DIVIDEND_TAX") {
       const amount = Math.abs(transaction.totalAmount ?? transaction.tax ?? 0) * fx;
       withholdingTaxUsd += amount;
+      standaloneExpensesUsd += amount;
       netContributionsUsd += amount;
       continue;
     }
@@ -150,6 +157,7 @@ export function calculatePortfolio(input: {
     if (transaction.type === "FEE") {
       const amount = Math.abs(transaction.totalAmount ?? transaction.fee ?? 0) * fx;
       feesUsd += amount;
+      standaloneExpensesUsd += amount;
       netContributionsUsd += amount;
       continue;
     }
@@ -339,6 +347,8 @@ export function calculatePortfolio(input: {
     realizedPnlUsd,
     unrealizedPnlUsd: hasMissingPrice ? null : unrealizedPnlUsd,
     dividendIncomeUsd,
+    netDividendIncomeUsd,
+    standaloneExpensesUsd,
     withholdingTaxUsd,
     feesUsd,
     fxPnlUsd: hasMissingPrice ? null : fxPnlUsd,
@@ -445,6 +455,7 @@ export function currencyRate(from: Currency, to: Currency, rates: FxSnapshot[]) 
   if (from === to) return 1;
   const latestByPair = new Map<string, FxSnapshot>();
   for (const rate of rates) {
+    if (rate.status === "FAILED" || !Number.isFinite(rate.rate) || rate.rate <= 0) continue;
     const key = `${rate.baseCurrency}:${rate.quoteCurrency}`;
     const current = latestByPair.get(key);
     if (!current || rate.rateDate > current.rateDate) latestByPair.set(key, rate);

@@ -1,0 +1,12 @@
+import assert from "node:assert/strict";
+import { readFile, readdir, stat } from "node:fs/promises";
+const chunks="dist/client/_next/static/chunks";
+const files=(await readdir(chunks)).filter(name=>name.endsWith(".js"));
+const source=(await Promise.all(files.map(name=>readFile(`${chunks}/${name}`,"utf8")))).join("\n");
+const assignment=source.match(/workerSrc=new URL\(([^)]{1,500})\)\.(pathname|href)/);
+assert.ok(assignment,"PDF worker URL must exist in the client build");
+assert.equal(assignment[2],"pathname","PDF worker must use a web path");
+const asset=assignment[1].match(/\/_next\/static\/media\/pdf\.worker[^\x60"']+\.mjs/)?.[0];
+assert.ok(asset,"PDF worker must use a same-origin emitted asset");
+assert.ok((await stat("dist/client"+asset)).size>0,"PDF worker must be packaged");
+console.log("PDF worker build check passed.");
