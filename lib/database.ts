@@ -484,20 +484,24 @@ async function ensureGuestDemoHistory(database: D1Database, ownerId: string) {
         { asset: "asset-demo-gld", start: 245, end: 263, prior: 260 },
       ];
       const stamp = new Date().toISOString();
-      const statements: D1PreparedStatement[] = [];
+      const marks: Array<{id:string;assetId:string;day:string;value:number}> = [];
       for (let index = 0; index <= 80; index++) {
         const date = new Date(`${last.day}T12:00:00Z`);
         date.setUTCDate(date.getUTCDate() - 80 + index);
         for (const curve of curves) {
           const value = index === 79 ? curve.prior : curve.start + (curve.end - curve.start) * index / 80;
-          statements.push(database.prepare(`INSERT OR IGNORE INTO price_snapshots
-            (id,owner_id,asset_id,price_date,fetched_at,provider,quoted_at,session,data_quality,is_delayed,price,nav,currency,status,is_demo)
-            VALUES (?,?,?,?,?,'Alpha Lab simulated history · not live',NULL,'MORNING','DEMO',0,?,NULL,'USD','DEMO',1)`)
-            .bind(id("price"),ownerId,curve.asset,date.toISOString().slice(0,10),stamp,value));
+          marks.push({id:id("price"),assetId:curve.asset,day:date.toISOString().slice(0,10),value});
         }
       }
-      statements.push(database.prepare("INSERT OR IGNORE INTO settings(key,value,updated_at) VALUES(?,'ready',?)").bind(historyKey,stamp));
-      await database.batch(statements);
+      // One query keeps initialization within D1's free per-request query budget.
+      await database.batch([
+        database.prepare(`INSERT OR IGNORE INTO price_snapshots
+          (id,owner_id,asset_id,price_date,fetched_at,provider,quoted_at,session,data_quality,is_delayed,price,nav,currency,status,is_demo)
+          SELECT json_extract(value,'$.id'),?,json_extract(value,'$.assetId'),json_extract(value,'$.day'),?,
+            'Alpha Lab simulated history · not live',NULL,'MORNING','DEMO',0,json_extract(value,'$.value'),NULL,'USD','DEMO',1 FROM json_each(?)`)
+          .bind(ownerId,stamp,JSON.stringify(marks)),
+        database.prepare("INSERT OR IGNORE INTO settings(key,value,updated_at) VALUES(?,'ready',?)").bind(historyKey,stamp),
+      ]);
     }
   }
   await database.prepare(`INSERT OR IGNORE INTO decision_reviews(id,thesis_id,due_at,horizon_days,expectation,confirmed)
